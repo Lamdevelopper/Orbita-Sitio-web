@@ -73,13 +73,13 @@ export const articles: Article[] = [
   },
 ];
 
-export type Edition = { slug: string; number: string; year: string; title: string; summary: string; color: string; articleSlugs: string[]; externalUrl?: string };
+export type Edition = { slug: string; number: string; year: string; title: string; summary: string; color: string; articleSlugs: string[]; externalUrl?: string; coverImage?: string };
 
 export const editions: Edition[] = [
   { slug: "fronteras", number: "08", year: "2026", title: "Fronteras", summary: "Personas, ideas y tecnologías que expanden nuestro horizonte.", color: "blue", articleSlugs: articles.filter((a) => a.edition === "fronteras").map((a) => a.slug) },
-  { slug: "materia", number: "07", year: "2025", title: "Materia", summary: "Edición histórica de Órbita disponible en Instagram.", color: "red", articleSlugs: articles.filter((a) => a.edition === "materia").map((a) => a.slug), externalUrl: "https://www.instagram.com/p/DaRQBDaDVzE/?igsh=YXd6MnN4YXRzdzVi" },
-  { slug: "senales", number: "06", year: "2025", title: "Señales", summary: "Edición histórica disponible en el visor digital.", color: "ink", articleSlugs: [], externalUrl: "https://heyzine.com/flip-book/9874b3c7ea.html" },
-  { slug: "trayectorias", number: "05", year: "2024", title: "Trayectorias", summary: "Una edición anterior conservada en el archivo digital de Órbita.", color: "blue", articleSlugs: [], externalUrl: "https://heyzine.com/flip-book/7a7fc16697.html#page/1" },
+  { slug: "materia", number: "07", year: "2025", title: "Materia", summary: "Edición histórica de Órbita disponible en Instagram.", color: "red", articleSlugs: articles.filter((a) => a.edition === "materia").map((a) => a.slug), externalUrl: "https://www.instagram.com/p/DaRQBDaDVzE/?igsh=YXd6MnN4YXRzdzVi", coverImage: "/editions/materia.png" },
+  { slug: "senales", number: "06", year: "2025", title: "Señales", summary: "Edición histórica disponible en el visor digital.", color: "ink", articleSlugs: [], externalUrl: "https://heyzine.com/flip-book/9874b3c7ea.html", coverImage: "/editions/senales.png" },
+  { slug: "trayectorias", number: "05", year: "2024", title: "Trayectorias", summary: "Una edición anterior conservada en el archivo digital de Órbita.", color: "blue", articleSlugs: [], externalUrl: "https://heyzine.com/flip-book/7a7fc16697.html#page/1", coverImage: "/editions/trayectorias.png" },
 ];
 
 const teamProfile = (slug: string, name: string) => ({ slug, name, area: "Equipo de Divulgación · Aerospace AAFI", bio: "Integrante del equipo de Divulgación AAFI Aerospace y de la comunidad editorial de Órbita." });
