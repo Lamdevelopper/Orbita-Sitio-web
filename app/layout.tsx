@@ -21,10 +21,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
   return {
   metadataBase: new URL(origin),
-  title: { default: "Órbita · Aerospace AAFI — Revista universitaria de divulgación científica", template: "%s · Órbita" },
-  description: "Ciencia, ingeniería y espacio contados desde la comunidad universitaria.",
-  openGraph: { title: "Órbita · Aerospace AAFI", description: "Historias que acercan la ciencia a nuevas generaciones.", type: "website", locale: "es_MX", images: [{url:`${origin}/og.png`,width:1672,height:941,alt:"Órbita · Aerospace AAFI — Ciencia, ingeniería y espacio desde la universidad"}] },
-  twitter: {card:"summary_large_image",title:"Órbita · Aerospace AAFI",description:"Ciencia, ingeniería y espacio desde la universidad",images:[`${origin}/og.png`]},
+  title: { default: "Órbita · Revista de divulgación científica", template: "%s · Órbita" },
+  description: "Ciencia, ingeniería y espacio desde la universidad.",
+  openGraph: { title: "Órbita · Revista de divulgación científica", description: "Ciencia, ingeniería y espacio desde la universidad.", type: "website", locale: "es_MX", images: [{url:`${origin}/og.png`,width:1672,height:941,alt:"Órbita — Ciencia, ingeniería y espacio desde la universidad"}] },
+  twitter: {card:"summary_large_image",title:"Órbita · Revista de divulgación científica",description:"Ciencia, ingeniería y espacio desde la universidad",images:[`${origin}/og.png`]},
   };
 }
 
