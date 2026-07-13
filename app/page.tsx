@@ -1,0 +1,15 @@
+import Link from "next/link";
+import { articles, editions } from "../lib/content";
+import { NewsletterForm } from "../components/NewsletterForm";
+
+export default function Home(){const [hero,...rest]=articles;const current=editions[0];return <>
+  <section className="hero-grid page-shell">
+    <Link href={`/articulos/${hero.slug}`} className="hero-image"><img src={hero.image} alt="Tierra vista desde el espacio"/><span className="image-index">ÓRBITA / 08</span></Link>
+    <div className="hero-copy"><span className="eyebrow">{hero.category} · HISTORIA DE PORTADA</span><h1>{hero.title}</h1><p>{hero.dek}</p><div className="byline">Por {hero.author} <span>·</span> {hero.readingMinutes} min</div><Link className="arrow-link" href={`/articulos/${hero.slug}`}>Leer la historia <span>→</span></Link></div>
+  </section>
+  <section className="story-strip page-shell">{rest.slice(0,3).map((a,i)=><article className="story-card" key={a.slug}><Link href={`/articulos/${a.slug}`}><div className="story-image"><img src={a.image} alt=""/><span>0{i+1}</span></div><span className="eyebrow">{a.category}</span><h2>{a.title}</h2><p>{a.dek}</p><div className="byline">{a.author} · {a.readingMinutes} min</div></Link></article>)}</section>
+  <section className="edition-feature"><div className="page-shell edition-grid"><div className={`cover cover-${current.color}`}><span>ÓRBITA</span><strong>{current.number}</strong><div className="cover-orbit"></div><h2>{current.title}</h2><small>REVISTA DE DIVULGACIÓN CIENTÍFICA</small></div><div className="edition-copy"><span className="eyebrow light">EDICIÓN ACTUAL / {current.year}</span><h2>Una edición para cruzar fronteras.</h2><p>{current.summary}</p><div className="edition-stats"><div><strong>{current.articleSlugs.length}</strong><span>historias</span></div><div><strong>42</strong><span>min de lectura</span></div><div><strong>08</strong><span>número</span></div></div><Link className="button light-button" href={`/ediciones/${current.slug}`}>Explorar la edición →</Link></div></div></section>
+  <section className="latest page-shell"><div className="section-heading"><div><span className="eyebrow">PUBLICADO RECIENTEMENTE</span><h2>Últimas historias</h2></div><Link href="/articulos">Ver todos →</Link></div>{articles.map(a=><Link className="feed-row" href={`/articulos/${a.slug}`} key={a.slug}><img src={a.image} alt=""/><div><span className="eyebrow">{a.category}</span><h3>{a.title}</h3><p>{a.dek}</p></div><div className="feed-meta">{a.author}<br/>{a.readingMinutes} min <span>↗</span></div></Link>)}</section>
+  <section className="topics page-shell"><div><span className="eyebrow">EXPLORA POR TEMA</span><h2>Una curiosidad lleva a otra.</h2></div><div className="topic-list">{["Aeroespacial","Ingeniería","Física","Tecnología","Medioambiente","Comunidad científica"].map((x,i)=><Link href={`/articulos?tema=${encodeURIComponent(x)}`} key={x}><span>0{i+1}</span>{x}<b>→</b></Link>)}</div></section>
+  <section className="newsletter"><div><span className="eyebrow light">MENSAJES DESDE ÓRBITA</span><h2>Una selección de historias, una vez al mes.</h2></div><NewsletterForm/></section>
+</>}

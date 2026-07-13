@@ -1,0 +1,8 @@
+"use client";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import type { Article } from "../lib/content";
+import { Button } from "./ui/button";
+import { track } from "./Analytics";
+
+export function ArticleExplorer({articles}:{articles:Article[]}){const[query,setQuery]=useState("");const[category,setCategory]=useState("Todos");const categories=["Todos",...Array.from(new Set(articles.map(a=>a.category)))];const filtered=useMemo(()=>articles.filter(a=>(category==="Todos"||a.category===category)&&`${a.title} ${a.dek} ${a.author} ${a.category}`.toLowerCase().includes(query.toLowerCase())),[articles,category,query]);function submit(e:React.FormEvent){e.preventDefault();track("search_used",{query:query.slice(0,80),results:filtered.length})}return <><form className="article-search" role="search" onSubmit={submit}><label htmlFor="article-query">Buscar en Órbita</label><div><input id="article-query" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Tema, autor o palabra clave"/><Button type="submit" size="lg">Buscar</Button></div></form><div className="filter-row" aria-label="Filtros de artículos">{categories.map(x=><Button variant={category===x?"default":"outline"} key={x} onClick={()=>setCategory(x)}>{x}</Button>)}</div><div className="article-grid">{filtered.map((a,i)=><Link href={`/articulos/${a.slug}`} className={i===0?"article-tile wide":"article-tile"} key={a.slug}><img src={a.image} alt=""/><div><span className="eyebrow">{a.category}</span><h2>{a.title}</h2><p>{a.dek}</p><small>{a.author} · {a.readingMinutes} min</small></div></Link>)}{filtered.length===0&&<p className="empty-note">No encontramos historias con esa búsqueda. Prueba otro tema o autor.</p>}</div></>}

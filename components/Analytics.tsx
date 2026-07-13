@@ -1,0 +1,7 @@
+"use client";
+import { useEffect } from "react";
+
+function persistentId(){let value=localStorage.getItem("orbita-anonymous-id");if(!value){value=crypto.randomUUID();localStorage.setItem("orbita-anonymous-id",value)}return value}
+function sessionId(){let value=sessionStorage.getItem("orbita-session-id");if(!value){value=crypto.randomUUID();sessionStorage.setItem("orbita-session-id",value)}return value}
+export async function track(eventName:string,properties:Record<string,unknown>={}){if(localStorage.getItem("orbita-cookie-consent")!=="all")return;const articleSlug=document.querySelector<HTMLElement>("[data-article-slug]")?.dataset.articleSlug||null;await fetch("/api/analytics",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({eventName,path:location.pathname,articleSlug,anonymousId:persistentId(),sessionId:sessionId(),referrer:document.referrer,properties}),keepalive:true}).catch(()=>{});}
+export function Analytics(){useEffect(()=>{track("page_viewed");let active=0;const timer=setInterval(()=>{if(document.visibilityState==="visible"){active+=5;if(active===30)track("active_read_30_seconds")}},5000);const sent=new Set<number>();const scroll=()=>{const max=document.documentElement.scrollHeight-innerHeight;if(max<=0)return;const pct=Math.round(scrollY/max*100);[25,50,75,90].forEach(n=>{if(pct>=n&&!sent.has(n)){sent.add(n);track(`article_${n}_percent`)}})};addEventListener("scroll",scroll,{passive:true});return()=>{clearInterval(timer);removeEventListener("scroll",scroll)}},[]);return null}

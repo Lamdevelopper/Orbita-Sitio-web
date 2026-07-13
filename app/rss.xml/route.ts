@@ -1,0 +1,3 @@
+import { articles } from "../../lib/content";
+const escape=(x:string)=>x.replace(/[<>&'\"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]!));
+export async function GET(){const base="https://orbita-revista.example";const items=articles.map(a=>`<item><title>${escape(a.title)}</title><link>${base}/articulos/${a.slug}</link><guid>${base}/articulos/${a.slug}</guid><description>${escape(a.dek)}</description></item>`).join("");return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Órbita</title><link>${base}</link><description>Revista universitaria de divulgación científica</description>${items}</channel></rss>`,{headers:{"content-type":"application/rss+xml; charset=utf-8"}})}
