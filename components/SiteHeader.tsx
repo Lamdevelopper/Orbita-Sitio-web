@@ -4,7 +4,7 @@ export function SiteHeader() {
   return <>
     <div className="utility-bar"><span>Divulgación científica desde la comunidad universitaria</span><span>AAFI · Facultad de Ingeniería</span></div>
     <header className="site-header">
-      <Link href="/" className="brand" aria-label="Órbita · Aerospace AAFI, inicio"><span className="brand-mark" aria-hidden="true">O</span><span className="brand-word">ÓRBITA</span><span className="brand-partner"><img src="/brand/aerospace-aafi.png" alt="Aerospace AAFI"/></span></Link>
+      <Link href="/" className="brand" aria-label="Órbita · Aerospace AAFI, inicio"><span className="brand-mark" aria-hidden="true">O</span><span className="brand-word">ÓRBITA</span><span className="brand-partner" role="img" aria-label="Aerospace AAFI"></span></Link>
       <nav aria-label="Navegación principal">
         <Link href="/articulos">Artículos</Link><Link href="/ediciones">Ediciones</Link><Link href="/autores">Autores</Link><Link href="/acerca">Acerca</Link>
       </nav>
