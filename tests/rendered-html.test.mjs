@@ -28,6 +28,8 @@ test("ships the Orbita Aerospace AAFI editorial surface", async () => {
   assert.match(styles, /analytics-dashboard/i);
   assert.match(dashboard, /lamoyi\.matias@gmail\.com/i);
   assert.match(dashboard, /requireChatGPTUser/i);
+  assert.match(dashboard, /COUNT\(DISTINCT CASE WHEN event_name = 'page_viewed' THEN anonymous_id END\)/i);
+  assert.match(dashboard, /article_slug IS NOT NULL/i);
   assert.match(articlePage, /imageCaption/i);
   assert.match(footer, /aafi-official/i);
   await access(new URL("../public/brand/aerospace-aafi.png", import.meta.url));

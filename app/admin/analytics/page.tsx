@@ -83,12 +83,12 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
   const [totalsRows, dailyRows, articleRows, sourceRows, eventRows, articleOptions, eventOptions, returningRows, secondStoryRows] = await Promise.all([
     db.all(sql<TotalsRow>`SELECT
       COUNT(*) AS events,
-      COUNT(DISTINCT anonymous_id) AS readers,
-      COUNT(DISTINCT session_id) AS sessions,
+      COUNT(DISTINCT CASE WHEN event_name = 'page_viewed' THEN anonymous_id END) AS readers,
+      COUNT(DISTINCT CASE WHEN event_name = 'page_viewed' THEN session_id END) AS sessions,
       SUM(CASE WHEN event_name = 'page_viewed' THEN 1 ELSE 0 END) AS pageViews,
-      COUNT(DISTINCT CASE WHEN event_name = 'active_read_30_seconds' THEN session_id END) AS meaningfulReads,
-      COUNT(DISTINCT CASE WHEN event_name = 'article_90_percent' THEN session_id END) AS completions,
-      SUM(CASE WHEN event_name IN ('share_clicked', 'link_copied') THEN 1 ELSE 0 END) AS shares
+      COUNT(DISTINCT CASE WHEN event_name = 'active_read_30_seconds' AND article_slug IS NOT NULL THEN anonymous_id END) AS meaningfulReads,
+      COUNT(DISTINCT CASE WHEN event_name = 'article_90_percent' AND article_slug IS NOT NULL THEN anonymous_id END) AS completions,
+      COUNT(DISTINCT CASE WHEN event_name IN ('share_clicked', 'link_copied') THEN session_id END) AS shares
       FROM audience_events WHERE ${where}`),
     db.all(sql<DailyRow>`SELECT
       strftime('%Y-%m-%d', occurred_at / 1000, 'unixepoch') AS day,
@@ -117,7 +117,7 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
       GROUP BY anonymous_id HAVING COUNT(DISTINCT session_id) > 1
     )`),
     db.all(sql<CountRow>`SELECT COUNT(*) AS value FROM (
-      SELECT session_id FROM audience_events WHERE ${where} AND article_slug IS NOT NULL
+      SELECT session_id FROM audience_events WHERE ${where} AND event_name = 'page_viewed' AND article_slug IS NOT NULL
       GROUP BY session_id HAVING COUNT(DISTINCT article_slug) > 1
     )`),
   ]);
@@ -157,11 +157,11 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
 
         <section className="analytics-metrics" aria-label="Indicadores principales">
           <article><span>LECTORES</span><strong>{totals.readers.toLocaleString("es-MX")}</strong><small>{totals.sessions.toLocaleString("es-MX")} sesiones</small></article>
-          <article><span>LECTURAS SIGNIFICATIVAS</span><strong>{totals.meaningfulReads.toLocaleString("es-MX")}</strong><small>{percent(totals.meaningfulReads, totals.readers)} de lectores</small></article>
-          <article><span>COMPLETARON 90%</span><strong>{totals.completions.toLocaleString("es-MX")}</strong><small>{percent(totals.completions, totals.meaningfulReads)} de lecturas activas</small></article>
+          <article><span>LECTORES ACTIVOS (30 S)</span><strong>{totals.meaningfulReads.toLocaleString("es-MX")}</strong><small>{percent(totals.meaningfulReads, totals.readers)} de lectores</small></article>
+          <article><span>COMPLETARON 90%</span><strong>{totals.completions.toLocaleString("es-MX")}</strong><small>{percent(totals.completions, totals.readers)} de lectores</small></article>
           <article><span>LEYERON OTRA HISTORIA</span><strong>{totals.secondStorySessions.toLocaleString("es-MX")}</strong><small>sesiones con 2+ artículos</small></article>
           <article><span>REGRESARON</span><strong>{totals.returningReaders.toLocaleString("es-MX")}</strong><small>lectores con 2+ sesiones</small></article>
-          <article><span>COMPARTIERON</span><strong>{totals.shares.toLocaleString("es-MX")}</strong><small>{percent(totals.shares, totals.pageViews)} de páginas vistas</small></article>
+          <article><span>COMPARTIERON</span><strong>{totals.shares.toLocaleString("es-MX")}</strong><small>{percent(totals.shares, totals.sessions)} de sesiones</small></article>
         </section>
 
         <section className="analytics-panel analytics-trend">
