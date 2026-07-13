@@ -2,12 +2,14 @@ import Link from "next/link";
 
 export function SiteHeader() {
   return <>
-    <div className="utility-bar"><span>Revista de divulgación científica</span><span>AAFI · FI UNAM</span></div>
+    <div className="utility-bar"><span>Divulgación científica desde la comunidad universitaria</span><span>AAFI · Facultad de Ingeniería</span></div>
     <header className="site-header">
-      <Link href="/" className="brand" aria-label="Órbita, inicio">
-        <span className="brand-mark" aria-hidden="true">O</span>
-        <span className="brand-word">ÓRBITA</span>
-        <img src="/brand/aafi-wordmark.svg" alt="Aerospace AAFI" className="brand-partner" />
+      <Link href="/" className="brand" aria-label="Órbita · Divulgación AAFI, inicio">
+        <img className="brand-logo" src="/brand/aafi-logo.svg" alt="" aria-hidden="true" />
+        <span className="brand-copy">
+          <span className="brand-word">ÓRBITA</span>
+          <span className="brand-tagline">REVISTA · AEROSPACE AAFI</span>
+        </span>
       </Link>
       <nav aria-label="Navegación principal">
         <Link href="/articulos">Artículos</Link><Link href="/ediciones">Ediciones</Link><Link href="/autores">Autores</Link><Link href="/acerca">Acerca</Link>
