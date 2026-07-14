@@ -1,0 +1,4 @@
+import { env } from "cloudflare:workers";
+import { isEditor } from "../../../lib/api";
+type Runtime={MEDIA?:R2Bucket};
+export async function POST(request:Request){if(!isEditor(request))return Response.json({error:"No autorizado"},{status:401});const file=(await request.formData()).get("file");if(!(file instanceof File)||!file.type.startsWith("image/"))return Response.json({error:"Selecciona una imagen"},{status:400});if(file.size>10*1024*1024)return Response.json({error:"La imagen no puede exceder 10 MB"},{status:413});const bucket=(env as unknown as Runtime).MEDIA;if(!bucket)return Response.json({error:"El almacenamiento de imágenes aún no está disponible"},{status:503});const extension=file.name.split(".").pop()?.toLowerCase()||"jpg",key=`editorial/${Date.now()}-${crypto.randomUUID()}.${extension}`;await bucket.put(key,file.stream(),{httpMetadata:{contentType:file.type}});return Response.json({url:`/media/${key}`},{status:201})}

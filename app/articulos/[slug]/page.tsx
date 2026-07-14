@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { articles } from "../../../lib/content";
 import { ShareButton } from "../../../components/ShareButton";
+import { cmsArticle, cmsArticles } from "../../../lib/cms";
 
 export async function generateStaticParams() {
   return articles.map(({ slug }) => ({ slug }));
@@ -18,11 +19,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const article = articles.find((item) => item.slug === slug);
+  const article = await cmsArticle(slug) ?? articles.find((item) => item.slug === slug);
   if (!article) notFound();
 
-  const sameEdition = articles.filter((item) => item.slug !== article.slug && item.edition === article.edition);
-  const related = [...sameEdition, ...articles.filter((item) => item.slug !== article.slug && item.edition !== article.edition)].slice(0, 2);
+  const allArticles=[...(await cmsArticles()),...articles];const sameEdition = allArticles.filter((item) => item.slug !== article.slug && item.edition === article.edition);
+  const related = [...sameEdition, ...allArticles.filter((item) => item.slug !== article.slug && item.edition !== article.edition)].filter((item,index,list)=>list.findIndex(candidate=>candidate.slug===item.slug)===index).slice(0, 2);
   const hasEditionPage = article.edition !== "en-preparacion";
 
   return (

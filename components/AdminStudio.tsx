@@ -1,0 +1,63 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type Article = { id: number; slug: string; title: string; dek: string; body: string; category: string; status: string; homepageSlot: string; homepageRank: number; heroUrl: string | null; heroCaption: string | null; readingMinutes: number; tags: string[] };
+type Edition = { id: number; number: number; slug: string; title: string; summary: string; coverUrl: string | null; coverAlt: string | null; externalUrl: string | null; isCurrent: boolean };
+const slugify = (value: string) => value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const blankArticle = { title: "", slug: "", authorName: "", dek: "", category: "Entrevista", body: "", heroUrl: "", heroCaption: "", tags: "", status: "draft", homepageSlot: "feed", homepageRank: 10, readingMinutes: 5, editionId: "" };
+const blankEdition = { title: "", slug: "", number: 13, summary: "", coverUrl: "", coverAlt: "", externalUrl: "", isCurrent: false };
+
+export function AdminStudio({ email }: { email: string }) {
+  const [tab, setTab] = useState<"articles" | "editions">("articles");
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [editions, setEditions] = useState<Edition[]>([]);
+  const [article, setArticle] = useState(blankArticle);
+  const [edition, setEdition] = useState(blankEdition);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const ordered = useMemo(() => [...articles].sort((a, b) => a.homepageSlot.localeCompare(b.homepageSlot) || a.homepageRank - b.homepageRank), [articles]);
+
+  async function load() {
+    const [articleData, editionData] = await Promise.all([fetch("/api/articles?scope=all").then((r) => r.json()), fetch("/api/editions?scope=all").then((r) => r.json())]);
+    setArticles(articleData.articles || []); setEditions(editionData.editions || []);
+  }
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- the request resolves asynchronously, then synchronizes the editorial list.
+  useEffect(() => { void load().catch(() => setMessage("No se pudo cargar el contenido editorial.")); }, []);
+  async function upload(file: File) {
+    setBusy(true); const form = new FormData(); form.append("file", file);
+    const response = await fetch("/api/media", { method: "POST", body: form }); const data = await response.json(); setBusy(false);
+    if (!response.ok) throw new Error(data.error || "No se pudo subir la imagen"); return data.url as string;
+  }
+  async function saveArticle(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true);
+    try {
+      const response = await fetch("/api/articles", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...article, editionId: article.editionId ? Number(article.editionId) : undefined, tags: article.tags.split(",").map((tag) => tag.trim()).filter(Boolean) }) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error);
+      setMessage("Artículo guardado. Puedes publicarlo o seguir editándolo."); setArticle(blankArticle); await load();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo guardar."); } finally { setBusy(false); }
+  }
+  async function saveEdition(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true);
+    try {
+      const response = await fetch("/api/editions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(edition) }); const data = await response.json(); if (!response.ok) throw new Error(data.error);
+      setMessage("Edición guardada en el archivo."); setEdition(blankEdition); await load();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo guardar."); } finally { setBusy(false); }
+  }
+  async function updateArticle(item: Article, updates: Record<string, unknown>) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/articles/${item.slug}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(updates) }); const data = await response.json(); if (!response.ok) throw new Error(data.error);
+      setMessage("Portada actualizada."); await load();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo actualizar."); } finally { setBusy(false); }
+  }
+  return <main className="admin-studio"><header><div><span className="eyebrow light">ÓRBITA · MESA EDITORIAL</span><h1>Publicar, ordenar y medir.</h1><p>Sesión privada: {email}</p></div><a href="/admin/analytics">Ver analytics →</a></header>
+    <div className="admin-tabs"><button className={tab === "articles" ? "active" : ""} onClick={() => setTab("articles")}>Artículos</button><button className={tab === "editions" ? "active" : ""} onClick={() => setTab("editions")}>Ediciones</button></div>{message && <p className="admin-message">{message}</p>}
+    {tab === "articles" ? <section className="admin-layout"><form className="admin-form" onSubmit={saveArticle}><span className="eyebrow">NUEVO ARTÍCULO</span>
+      <label>Título<input required value={article.title} onChange={(event) => setArticle({ ...article, title: event.target.value, slug: article.slug || slugify(event.target.value) })} /></label><label>URL / slug<input required value={article.slug} onChange={(event) => setArticle({ ...article, slug: slugify(event.target.value) })} /></label><label>Autor<input required placeholder="Nombre del autor" value={article.authorName} onChange={(event) => setArticle({ ...article, authorName: event.target.value })} /></label><label>Categoría<input required value={article.category} onChange={(event) => setArticle({ ...article, category: event.target.value })} /></label>
+      <label>Edición<select value={article.editionId} onChange={(event) => setArticle({ ...article, editionId: event.target.value })}><option value="">Sin edición / contenido web</option>{editions.map((item) => <option value={item.id} key={item.id}>Nº {item.number} · {item.title}</option>)}</select></label><label>Bajada<textarea required value={article.dek} onChange={(event) => setArticle({ ...article, dek: event.target.value })} /></label><label>Texto del artículo<textarea className="article-editor" required placeholder="Usa ## para subtítulos y > para citas" value={article.body} onChange={(event) => setArticle({ ...article, body: event.target.value })} /></label><label>Tags (separados por coma)<input value={article.tags} onChange={(event) => setArticle({ ...article, tags: event.target.value })} /></label>
+      <div className="admin-pair"><label>Ubicación<select value={article.homepageSlot} onChange={(event) => setArticle({ ...article, homepageSlot: event.target.value })}><option value="hero">Hero / portada</option><option value="featured">Destacado</option><option value="feed">Feed</option><option value="hidden">No mostrar</option></select></label><label>Prioridad<input type="number" min="0" value={article.homepageRank} onChange={(event) => setArticle({ ...article, homepageRank: Number(event.target.value) })} /></label></div><div className="admin-pair"><label>Estado<select value={article.status} onChange={(event) => setArticle({ ...article, status: event.target.value })}><option value="draft">Borrador</option><option value="review">Revisión</option><option value="published">Publicado</option></select></label><label>Minutos<input type="number" min="1" value={article.readingMinutes} onChange={(event) => setArticle({ ...article, readingMinutes: Number(event.target.value) })} /></label></div>
+      <label>Imagen principal<input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (file) try { setArticle({ ...article, heroUrl: await upload(file) }); } catch (error) { setMessage(error instanceof Error ? error.message : "Error de imagen"); } }} /></label>{article.heroUrl && <img className="admin-preview" src={article.heroUrl} alt="Vista previa" />}<label>Pie de foto<input value={article.heroCaption} onChange={(event) => setArticle({ ...article, heroCaption: event.target.value })} /></label><button disabled={busy}>{busy ? "Guardando…" : "Guardar artículo"}</button></form>
+      <section className="admin-list"><span className="eyebrow">ORDEN DE PORTADA</span><h2>Artículos en CMS</h2>{ordered.map((item) => <article key={item.id}><div><span className="admin-pill">{item.homepageSlot}</span><h3>{item.title}</h3><p>{item.status} · prioridad {item.homepageRank}</p></div><div className="admin-actions"><button type="button" onClick={() => updateArticle(item, { status: "published" })}>Publicar</button><button type="button" onClick={() => updateArticle(item, { homepageRank: Math.max(0, item.homepageRank - 1) })}>↑</button><button type="button" onClick={() => updateArticle(item, { homepageRank: item.homepageRank + 1 })}>↓</button></div></article>)}{!ordered.length && <p>Aún no hay artículos creados desde el CMS.</p>}</section></section>
+      : <section className="admin-layout"><form className="admin-form" onSubmit={saveEdition}><span className="eyebrow">NUEVA EDICIÓN</span><label>Nombre / fecha<input required placeholder="Julio de 2026" value={edition.title} onChange={(event) => setEdition({ ...edition, title: event.target.value, slug: edition.slug || slugify(event.target.value) })} /></label><div className="admin-pair"><label>Número<input type="number" min="1" value={edition.number} onChange={(event) => setEdition({ ...edition, number: Number(event.target.value) })} /></label><label>Slug<input required value={edition.slug} onChange={(event) => setEdition({ ...edition, slug: slugify(event.target.value) })} /></label></div><label>Resumen<textarea value={edition.summary} onChange={(event) => setEdition({ ...edition, summary: event.target.value })} /></label><label>Link de revista (Heyzine / Canva)<input type="url" value={edition.externalUrl} onChange={(event) => setEdition({ ...edition, externalUrl: event.target.value })} /></label><label>Miniatura<input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (file) try { setEdition({ ...edition, coverUrl: await upload(file) }); } catch (error) { setMessage(error instanceof Error ? error.message : "Error de imagen"); } }} /></label>{edition.coverUrl && <img className="admin-preview cover" src={edition.coverUrl} alt="Vista previa" />}<label>Texto alternativo de portada<input value={edition.coverAlt} onChange={(event) => setEdition({ ...edition, coverAlt: event.target.value })} /></label><label className="admin-check"><input type="checkbox" checked={edition.isCurrent} onChange={(event) => setEdition({ ...edition, isCurrent: event.target.checked })} /> Es la edición actual</label><button disabled={busy}>{busy ? "Guardando…" : "Guardar edición"}</button></form><section className="admin-list"><span className="eyebrow">ARCHIVO</span><h2>Ediciones en CMS</h2>{editions.map((item) => <article key={item.id}><div><span className="admin-pill">Nº {item.number}</span><h3>{item.title}</h3><p>{item.externalUrl || "Sin link externo"}</p></div>{item.coverUrl && <img className="admin-thumb" src={item.coverUrl} alt="" />}</article>)}{!editions.length && <p>Aún no hay ediciones creadas desde el CMS.</p>}</section></section>}</main>;
+}
