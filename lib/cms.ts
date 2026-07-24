@@ -3,13 +3,34 @@ import { getDb } from "../db";
 import { articles as articleTable, authors, editions as editionTable } from "../db/schema";
 import type { Article, Edition } from "./content";
 
-function sections(body: string) {
+function sections(body: string, imageMap?: Map<string, { url: string; caption?: string }>) {
   const output: Article["body"] = [];
-  let current: { heading?: string; paragraphs: string[]; quote?: string } = { paragraphs: [] };
-  for (const line of body.split(/\n+/).map((value) => value.trim()).filter(Boolean)) {
-    if (line.startsWith("## ")) {
+  let current: Article["body"][number] = { paragraphs: [] };
+ for (const line of body.split(/\n+/).map((value) => value.trim()).filter(Boolean)) {
+    // Resolve {{IMG:N}} markers from the imageMap (submission parser output)
+    const imgMarker = line.match(/^\{\{IMG:(\d+)\}\}$/);
+    if (imgMarker) {
+      const imgKey = `IMAGEN ${imgMarker[1]}`;
+      const imgData = imageMap?.get(imgKey);
+      if (imgData) {
+        if (current.paragraphs.length || current.heading || current.quote) output.push(current);
+        output.push({ paragraphs: [], image: { url: imgData.url, caption: imgData.caption } });
+        current = { paragraphs: [] };
+      }
+      continue;
+    }
+   if (line.startsWith("## ")) {
       if (current.paragraphs.length || current.heading) output.push(current);
       current = { heading: line.slice(3), paragraphs: [] };
+    } else if (/^\[IMAGEN\s/.test(line)) {
+      if (current.paragraphs.length || current.heading || current.quote) output.push(current);
+      const inner = line.slice(8, -1).trim();
+      const pipe = inner.lastIndexOf(" | ");
+      const url = pipe > -1 ? inner.slice(0, pipe).trim() : inner;
+      const caption = pipe > -1 ? inner.slice(pipe + 3).trim() : undefined;
+      current = { paragraphs: [], image: { url, caption } };
+      output.push(current);
+      current = { paragraphs: [] };
     } else if (line.startsWith("> ")) current.quote = line.slice(2);
     else current.paragraphs.push(line);
   }
@@ -36,7 +57,9 @@ function mapArticle(row: typeof articleTable.$inferSelect, author: string, editi
     image: row.heroUrl || "/articles/archive/jorge-ferrer.webp",
     imageCaption: row.heroCaption || undefined,
     edition: editionSlug || "en-preparacion",
-    body: sections(row.body),
+    body: sections(row.body, row.images.length > 0
+      ? new Map(row.images.map((img) => [img.ref, { url: img.url, caption: img.caption }]))
+      : undefined),
     homepageSlot: row.homepageSlot,
     homepageRank: row.homepageRank,
   };

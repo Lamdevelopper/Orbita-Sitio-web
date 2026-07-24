@@ -57,6 +57,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {article.body.map((section, index) => (
             <section id={`seccion-${index}`} key={index}>
               {section.heading && <h2>{section.heading}</h2>}
+              {section.image && (
+                <figure className="article-inline-image">
+                  <img src={section.image.url} alt={section.image.caption || article.title} />
+                  {section.image.caption && <figcaption>{section.image.caption}</figcaption>}
+                </figure>
+              )}
               {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
               {section.quote && <blockquote>{section.quote}</blockquote>}
             </section>

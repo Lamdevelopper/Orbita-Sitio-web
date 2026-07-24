@@ -31,6 +31,7 @@ export const articles = sqliteTable("articles", {
   title: text("title").notNull(),
   dek: text("dek").notNull().default(""),
   body: text("body").notNull(),
+  images: text("images", { mode: "json" }).$type<Array<{ref: string; url: string; caption?: string}>>().notNull().default([]),
   category: text("category").notNull(),
   tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
   heroUrl: text("hero_url"),

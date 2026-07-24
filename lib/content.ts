@@ -12,7 +12,7 @@ export type Article = {
   edition: string;
   sourceLabel?: string;
   featured?: boolean;
-  body: Array<{ heading?: string; paragraphs: string[]; quote?: string }>;
+  body: Array<{ heading?: string; paragraphs: string[]; quote?: string; image?: { url: string; caption?: string } }>;
 };
 
 export const articles: Article[] = [
