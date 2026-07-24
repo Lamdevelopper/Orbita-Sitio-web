@@ -25,6 +25,24 @@ function bodyToMarkdown(body: typeof staticArticles[number]["body"]): string {
   }).join("\n\n");
 }
 
+async function migrationStatus() {
+  const rows = await getDb().select({ slug: articles.slug }).from(articles);
+  const existing = new Set(rows.map((row) => row.slug));
+  const pendingSlugs = staticArticles.map((article) => article.slug).filter((slug) => !existing.has(slug));
+  return {
+    total: staticArticles.length,
+    migrated: staticArticles.length - pendingSlugs.length,
+    pending: pendingSlugs.length,
+    pendingSlugs,
+  };
+}
+
+export async function GET(request: Request) {
+  if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  try { return Response.json(await migrationStatus()); }
+  catch (error) { return routeError(error); }
+}
+
 export async function POST(request: Request) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
   try {
@@ -61,6 +79,6 @@ export async function POST(request: Request) {
       results.push(article.slug);
     }
 
-    return Response.json({ imported, skipped, total: staticArticles.length, slugs: results });
+    return Response.json({ imported, skipped, slugs: results, ...(await migrationStatus()) });
   } catch (error) { return routeError(error); }
 }

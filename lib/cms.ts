@@ -43,6 +43,7 @@ function formatDate(value: Date | null) {
 }
 
 export type CmsArticle = Article & { homepageSlot: string; homepageRank: number };
+export type CmsSnapshot = { articles: CmsArticle[]; managedSlugs: Set<string> };
 
 function mapArticle(row: typeof articleTable.$inferSelect, author: string, editionSlug?: string | null): CmsArticle {
   return {
@@ -65,14 +66,23 @@ function mapArticle(row: typeof articleTable.$inferSelect, author: string, editi
   };
 }
 
-export async function cmsArticles() {
+export async function cmsSnapshot(): Promise<CmsSnapshot> {
   try {
     const rows = await getDb().select({ article: articleTable, author: authors.name, editionSlug: editionTable.slug })
       .from(articleTable).leftJoin(authors, eq(articleTable.authorId, authors.id))
       .leftJoin(editionTable, eq(articleTable.editionId, editionTable.id))
-      .where(eq(articleTable.status, "published")).orderBy(desc(articleTable.publishedAt));
-    return rows.map((row) => mapArticle(row.article, row.author || "Equipo Órbita", row.editionSlug));
-  } catch { return [] as CmsArticle[]; }
+      .orderBy(desc(articleTable.publishedAt));
+    return {
+      articles: rows
+        .filter((row) => row.article.status === "published")
+        .map((row) => mapArticle(row.article, row.author || "Equipo Órbita", row.editionSlug)),
+      managedSlugs: new Set(rows.map((row) => row.article.slug)),
+    };
+  } catch { return { articles: [], managedSlugs: new Set<string>() }; }
+}
+
+export async function cmsArticles() {
+  return (await cmsSnapshot()).articles;
 }
 
 export async function cmsArticle(slug: string) {
