@@ -8,6 +8,27 @@
       "when": 1783915350902,
       "tag": "0000_flaky_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783969500000,
+      "tag": "0001_remove_invalid_audience_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784016000000,
+      "tag": "0002_editorial_cms",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1753392000000,
+      "tag": "0003_add_images_to_articles",
+      "breakpoints": true
     }
   ]
 }

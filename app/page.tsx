@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { articles, editions } from "../lib/content";
 import { NewsletterForm } from "../components/NewsletterForm";
+import { cmsArticles } from "../lib/cms";
 
-export default function Home(){const [hero,...rest]=articles;const current=editions[0];const currentStories=articles.filter((article)=>current.articleSlugs.includes(article.slug));const currentMinutes=currentStories.reduce((total,article)=>total+article.readingMinutes,0);return <>
+export const dynamic="force-dynamic";
+export default async function Home(){const managed=await cmsArticles();const ordered=[...managed.sort((a,b)=>a.homepageRank-b.homepageRank),...articles.filter(staticArticle=>!managed.some(item=>item.slug===staticArticle.slug))];const hero=managed.find(item=>item.homepageSlot==="hero")??ordered[0];const rest=[...managed.filter(item=>item.slug!==hero.slug&&item.homepageSlot!=="hidden").sort((a,b)=>a.homepageRank-b.homepageRank),...ordered.filter(item=>item.slug!==hero.slug&&!managed.some(managedItem=>managedItem.slug===item.slug))];const current=editions[0];const currentStories=articles.filter((article)=>current.articleSlugs.includes(article.slug));const currentMinutes=currentStories.reduce((total,article)=>total+article.readingMinutes,0);return <>
   <section className="hero-grid page-shell">
     <Link href={`/articulos/${hero.slug}`} className="hero-image"><img src={hero.image} alt={hero.imageCaption??hero.title}/><span className="image-index">ÓRBITA / {current.number}</span></Link>
     <div className="hero-copy"><span className="eyebrow">{hero.category} · HISTORIA DE PORTADA</span><h1>{hero.title}</h1><p>{hero.dek}</p><div className="byline">Por {hero.author} <span>·</span> {hero.readingMinutes} min</div><Link className="arrow-link" href={`/articulos/${hero.slug}`}>Leer la historia <span>→</span></Link></div>

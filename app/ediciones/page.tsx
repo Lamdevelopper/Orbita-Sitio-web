@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { editions } from "../../lib/content";
+import { cmsEditions } from "../../lib/cms";
 
 export const metadata: Metadata = { title: "Ediciones", description: "El archivo completo de la revista Órbita." };
 
-export default function EditionsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function EditionsPage() {
+  const managed = await cmsEditions();
+  const allEditions = [...managed, ...editions.filter((edition) => !managed.some((item) => item.slug === edition.slug))];
   return (
     <div className="page-shell listing-page">
       <div className="listing-intro">
@@ -13,7 +18,7 @@ export default function EditionsPage() {
         <p>Explora las ediciones por su fecha real y abre sus mejores historias como artículos independientes.</p>
       </div>
       <div className="edition-archive">
-        {editions.map((edition) => (
+        {allEditions.map((edition) => (
           <Link href={`/ediciones/${edition.slug}`} key={edition.slug}>
             {edition.coverImage ? (
               <div className={`edition-thumbnail edition-thumbnail-${edition.slug}`}>
