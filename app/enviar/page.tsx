@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Envía tu artículo · Órbita",
-  description: "Guía para colaborar con la revista Órbita. Aprende a enviar tu artículo usando nuestra plantilla.",
+  title: "EnvÃ­a tu artÃ­culo Â· Ã“rbita",
+  description: "GuÃ­a para colaborar con la revista Ã“rbita. Aprende a enviar tu artÃ­culo usando nuestra plantilla.",
 };
 
 export default function EnviarPage() {
@@ -10,20 +10,20 @@ export default function EnviarPage() {
     <div className="listing-page">
       <div className="page-shell">
         <div className="listing-intro">
-          <h1>Envía tu artículo a Órbita</h1>
+          <h1>EnvÃ­a tu artÃ­culo a Ã“rbita</h1>
           <p>
-            ¿Tienes una historia sobre ciencia, ingeniería o exploración espacial que quieras compartir?
-            En Órbita publicamos voces de la comunidad aeroespacial mexicana y latinoamericana.
-            Usa esta guía para preparar una sola carpeta con tu texto y tus imágenes.
+            Â¿Tienes una historia sobre ciencia, ingenierÃ­a o exploraciÃ³n espacial que quieras compartir?
+            En Ã“rbita publicamos voces de la comunidad aeroespacial mexicana y latinoamericana.
+            Usa esta guÃ­a para preparar una sola carpeta con tu texto y tus imÃ¡genes.
           </p>
         </div>
 
         <section className="template-guide">
-          <h2>Una carpeta por artículo</h2>
+          <h2>Una carpeta por artÃ­culo</h2>
           <p className="lead">
             Crea una carpeta con un nombre corto, guarda dentro el archivo <code>.txt</code> o <code>.md</code>
-            y agrega todas las imágenes originales. El nombre escrito en <code>RUTA:</code> debe ser idéntico
-            al nombre del archivo, incluida su extensión.
+            y agrega todas las imÃ¡genes originales. El nombre escrito en <code>RUTA:</code> debe ser idÃ©ntico
+            al nombre del archivo, incluida su extensiÃ³n.
           </p>
           <div className="template-example">
             <pre>{`mi-articulo-cansat/
@@ -36,38 +36,38 @@ export default function EnviarPage() {
         <section className="template-guide">
           <h2>La plantilla</h2>
           <p className="lead">
-            Todos los artículos deben seguir este formato para que podamos procesarlos correctamente.
-            Cada campo va en una línea aparte, con el nombre del campo en mayúsculas, dos puntos y el valor.
+            Todos los artÃ­culos deben seguir este formato para que podamos procesarlos correctamente.
+            Cada campo va en una lÃ­nea aparte, con el nombre del campo en mayÃºsculas, dos puntos y el valor.
           </p>
           <div className="template-example">
-            <pre>{`TÍTULO: Mi experiencia en el CanSat Competition 2026
+            <pre>{`TÃTULO: Mi experiencia en el CanSat Competition 2026
 AUTOR: Tu nombre completo
-CATEGORÍA: Ingeniería
-BAJADA: Un resumen breve de una o dos frases que enganche al lector.
-EDICIÓN: julio-2026
+CATEGORÃA: IngenierÃ­a
+SUBTÍTULO: Un resumen breve de una o dos frases que enganche al lector.
+EDICIÃ“N: julio-2026
 
 ---
 
-## Cómo empezó todo
+## CÃ³mo empezÃ³ todo
 
-El primer párrafo introduce el tema y ubica al lector. Aquí puedes contar
-el contexto de tu historia: cómo surgió la idea o qué te motivó.
+El primer pÃ¡rrafo introduce el tema y ubica al lector. AquÃ­ puedes contar
+el contexto de tu historia: cÃ³mo surgiÃ³ la idea o quÃ© te motivÃ³.
 
-> Una cita que resuma el corazón de tu artículo.
+> Una cita que resuma el corazÃ³n de tu artÃ­culo.
 
 ## El desarrollo
 
-Continúa con los detalles. Explica lo que aprendiste, los retos que
-enfrentaste y cómo los resolviste. Sé específico: menciona nombres,
-lugares, tecnologías y resultados concretos.
+ContinÃºa con los detalles. Explica lo que aprendiste, los retos que
+enfrentaste y cÃ³mo los resolviste. SÃ© especÃ­fico: menciona nombres,
+lugares, tecnologÃ­as y resultados concretos.
 
 [IMAGEN 1]
 RUTA: foto-del-evento.webp
 PIE DE FOTO: Pie de foto descriptivo
 
-## Conclusión
+## ConclusiÃ³n
 
-Cierra con una reflexión, una lección aprendida o una idea que quieras
+Cierra con una reflexiÃ³n, una lecciÃ³n aprendida o una idea que quieras
 dejar en quienes te leen.`}</pre>
           </div>
         </section>
@@ -76,32 +76,32 @@ dejar en quienes te leen.`}</pre>
           <h2>Paso a paso</h2>
           <ol>
             <li>
-              <strong>Elige un tema.</strong> Debe estar relacionado con ciencia, tecnología, ingeniería o exploración
-              espacial, con conexión a México o Latinoamérica.
+              <strong>Elige un tema.</strong> Debe estar relacionado con ciencia, tecnologÃ­a, ingenierÃ­a o exploraciÃ³n
+              espacial, con conexiÃ³n a MÃ©xico o LatinoamÃ©rica.
             </li>
             <li>
-              <strong>Escribe tu artículo.</strong> Usa la plantilla de arriba y guarda el resultado como archivo
-              <code> .txt</code> o <code>.md</code>. También puedes pegar el texto directamente en tu mensaje.
+              <strong>Escribe tu artÃ­culo.</strong> Usa la plantilla de arriba y guarda el resultado como archivo
+              <code> .txt</code> o <code>.md</code>. TambiÃ©n puedes pegar el texto directamente en tu mensaje.
             </li>
             <li>
-              <strong>Las secciones con ##</strong> se convierten en subtítulos dentro del artículo. Úsalas para dividir
-              tu texto en partes lógicas.
+              <strong>Las secciones con ##</strong> se convierten en subtÃ­tulos dentro del artÃ­culo. Ãšsalas para dividir
+              tu texto en partes lÃ³gicas.
             </li>
             <li>
-              <strong>Las citas con &gt;</strong> aparecen destacadas en azul dentro del artículo. Úsalas para frases
+              <strong>Las citas con &gt;</strong> aparecen destacadas en azul dentro del artÃ­culo. Ãšsalas para frases
               que quieras resaltar.
             </li>
             <li>
               <strong>Numera cada imagen.</strong> Escribe un bloque <code>[IMAGEN 1]</code>, seguido por
-              <code> RUTA:</code> y <code>PIE DE FOTO:</code>. Repite con 2, 3 y así sucesivamente.
+              <code> RUTA:</code> y <code>PIE DE FOTO:</code>. Repite con 2, 3 y asÃ­ sucesivamente.
             </li>
             <li>
-              <strong>Elige una categoría.</strong> Algunas opciones: Ingeniería, Entrevista, Perfil, Aeroespacial,
-              Ciencias espaciales, Biotecnología, Comunidad, Investigación.
+              <strong>Elige una categorÃ­a.</strong> Algunas opciones: IngenierÃ­a, Entrevista, Perfil, Aeroespacial,
+              Ciencias espaciales, BiotecnologÃ­a, Comunidad, InvestigaciÃ³n.
             </li>
             <li>
-              <strong>Envía la carpeta.</strong> Comprímela como <code>.zip</code> y escríbenos con el asunto
-              &ldquo;Propuesta de artículo&rdquo;. Si no puedes comprimirla, comparte el texto y todas las imágenes juntas.
+              <strong>EnvÃ­a la carpeta.</strong> ComprÃ­mela como <code>.zip</code> y escrÃ­benos con el asunto
+              &ldquo;Propuesta de artÃ­culo&rdquo;. Si no puedes comprimirla, comparte el texto y todas las imÃ¡genes juntas.
             </li>
           </ol>
         </section>
@@ -109,47 +109,47 @@ dejar en quienes te leen.`}</pre>
         <section className="template-guide">
           <h2>Plantilla lista para copiar</h2>
           <p className="lead">
-            Copia este bloque, pégalo en tu editor y reemplaza cada campo con tu contenido.
+            Copia este bloque, pÃ©galo en tu editor y reemplaza cada campo con tu contenido.
           </p>
           <div className="template-copy">
-            <pre>{`TÍTULO:
+            <pre>{`TÃTULO:
 AUTOR:
-CATEGORÍA:
-BAJADA:
-EDICIÓN:
+CATEGORÃA:
+SUBTÍTULO:
+EDICIÃ“N:
 
 ---
 
-## Primer subtítulo
+## Primer subtÃ­tulo
 
-Tu primer párrafo aquí.
+Tu primer pÃ¡rrafo aquÃ­.
 
 > Una cita destacada.
 
-## Segundo subtítulo
+## Segundo subtÃ­tulo
 
-Continúa desarrollando tu historia.
+ContinÃºa desarrollando tu historia.
 
 [IMAGEN 1]
 RUTA: tu-imagen.webp
 PIE DE FOTO: Pie de foto
 
-## Conclusión
+## ConclusiÃ³n
 
 Cierra con una idea que quieras dejar en tus lectores.`}</pre>
           </div>
         </section>
 
         <section className="template-guide template-faq">
-          <h2>¿Dudas?</h2>
+          <h2>Â¿Dudas?</h2>
           <p>
             Si tienes preguntas sobre el formato, el proceso o quieres proponer un tema antes de escribirlo,
-            escríbenos. El equipo editorial de Órbita revisa cada propuesta y te respondemos en unos días.
+            escrÃ­benos. El equipo editorial de Ã“rbita revisa cada propuesta y te respondemos en unos dÃ­as.
           </p>
           <p>
-            Puedes contactarnos a través de nuestras redes sociales o por correo electrónico.
-            Busca <strong>Órbita Revista</strong> en Instagram o escribe a la dirección que aparece
-            en nuestra página de <a href="/acerca">Acerca</a>.
+            Puedes contactarnos a travÃ©s de nuestras redes sociales o por correo electrÃ³nico.
+            Busca <strong>Ã“rbita Revista</strong> en Instagram o escribe a la direcciÃ³n que aparece
+            en nuestra pÃ¡gina de <a href="/acerca">Acerca</a>.
           </p>
         </section>
       </div>

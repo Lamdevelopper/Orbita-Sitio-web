@@ -16,7 +16,7 @@
  *   TÍTULO: ...
  *   AUTOR: ...
  *   CATEGORÍA: ...
- *   BAJADA: ...
+ *   SUBTÍTULO: ...
  *   EDICIÓN: ... (optional)
  *
  *   ---
@@ -74,7 +74,7 @@ export function parseSubmission(text: string): ParsedSubmission {
     title: fields["TÍTULO"],
     author: fields["AUTOR"],
     category: fields["CATEGORÍA"],
-    dek: fields["BAJADA"] || "",
+    dek: fields["SUBTÍTULO"] || "",
     edition: fields["EDICIÓN"] || undefined,
     body,
     images,
