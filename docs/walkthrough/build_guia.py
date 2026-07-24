@@ -104,8 +104,34 @@ def add_heading(doc, text, level=1):
     return doc.add_heading(text, level=level)
 
 
-def add_numbered(doc, lead, detail):
+def new_numbering_instance(doc, start=1):
+    style = doc.styles["List Number"]
+    base_num_id = style._element.pPr.numPr.numId.val
+    numbering = doc.part.numbering_part.element
+    base_num = next(node for node in numbering.findall(qn("w:num")) if int(node.get(qn("w:numId"))) == base_num_id)
+    abstract_id = base_num.find(qn("w:abstractNumId")).get(qn("w:val"))
+    new_id = max(int(node.get(qn("w:numId"))) for node in numbering.findall(qn("w:num"))) + 1
+    num = OxmlElement("w:num")
+    num.set(qn("w:numId"), str(new_id))
+    abstract = OxmlElement("w:abstractNumId")
+    abstract.set(qn("w:val"), abstract_id)
+    num.append(abstract)
+    override = OxmlElement("w:lvlOverride")
+    override.set(qn("w:ilvl"), "0")
+    start_override = OxmlElement("w:startOverride")
+    start_override.set(qn("w:val"), str(start))
+    override.append(start_override)
+    num.append(override)
+    numbering.append(num)
+    return new_id
+
+
+def add_numbered(doc, lead, detail, num_id=None):
     p = doc.add_paragraph(style="List Number")
+    if num_id is not None:
+        num_pr = p._p.get_or_add_pPr().get_or_add_numPr()
+        num_pr.get_or_add_ilvl().val = 0
+        num_pr.get_or_add_numId().val = num_id
     first = p.add_run(lead + " ")
     set_run_font(first, bold=True)
     rest = p.add_run(detail)
@@ -263,11 +289,12 @@ def build():
     subtitle.add_run("Una carpeta, una plantilla sencilla y todas tus imágenes listas para publicar.")
     add_callout(doc, "Lo más importante", "No necesitas saber de páginas web. Entrega una carpeta ordenada; el equipo editorial se encarga de revisar, dar formato y publicar.")
     add_heading(doc, "El proceso en cinco pasos", 1)
-    add_numbered(doc, "Crea una carpeta.", "Ponle un nombre corto relacionado con tu artículo.")
-    add_numbered(doc, "Copia la plantilla.", "Guárdala como articulo.txt o articulo.md dentro de la carpeta.")
-    add_numbered(doc, "Escribe sin borrar las etiquetas.", "Completa TÍTULO, AUTOR, CATEGORÍA, BAJADA y, si aplica, EDICIÓN.")
-    add_numbered(doc, "Agrega tus imágenes.", "Guarda los archivos originales en la misma carpeta y escribe su nombre exacto en RUTA.")
-    add_numbered(doc, "Comprime y envía.", "Convierte la carpeta en un archivo .zip y mándalo al responsable editorial.")
+    process_num = new_numbering_instance(doc)
+    add_numbered(doc, "Crea una carpeta.", "Ponle un nombre corto relacionado con tu artículo.", process_num)
+    add_numbered(doc, "Copia la plantilla.", "Guárdala como articulo.txt o articulo.md dentro de la carpeta.", process_num)
+    add_numbered(doc, "Escribe sin borrar las etiquetas.", "Completa TÍTULO, AUTOR, CATEGORÍA, BAJADA y, si aplica, EDICIÓN.", process_num)
+    add_numbered(doc, "Agrega tus imágenes.", "Guarda los archivos originales en la misma carpeta y escribe su nombre exacto en RUTA.", process_num)
+    add_numbered(doc, "Comprime y envía.", "Convierte la carpeta en un archivo .zip y mándalo al responsable editorial.", process_num)
     add_heading(doc, "Qué hará el editor", 2)
     add_bullet(doc, "Revisará el texto y abrirá una vista previa antes de publicar.")
     add_bullet(doc, "Subirá las imágenes y conservará los pies de foto que escribiste.")
@@ -381,9 +408,10 @@ La siguiente versión incorporará un sensor ambiental y una carcasa más ligera
     for item in checklist:
         add_bullet(doc, item)
     add_heading(doc, "Cómo enviar la carpeta", 1)
-    add_numbered(doc, "Comprímela.", "En Windows: clic derecho sobre la carpeta > Comprimir en archivo ZIP. En macOS: clic derecho > Comprimir.")
-    add_numbered(doc, "Nombra el ZIP.", "Usa tu apellido y un título corto, por ejemplo: perez-mision-cansat.zip.")
-    add_numbered(doc, "Envíalo.", "Adjunta el ZIP por el medio acordado con el responsable editorial y escribe tu nombre y título en el mensaje.")
+    send_num = new_numbering_instance(doc)
+    add_numbered(doc, "Comprímela.", "En Windows: clic derecho sobre la carpeta > Comprimir en archivo ZIP. En macOS: clic derecho > Comprimir.", send_num)
+    add_numbered(doc, "Nombra el ZIP.", "Usa tu apellido y un título corto, por ejemplo: perez-mision-cansat.zip.", send_num)
+    add_numbered(doc, "Envíalo.", "Adjunta el ZIP por el medio acordado con el responsable editorial y escribe tu nombre y título en el mensaje.", send_num)
     add_callout(doc, "Si el archivo pesa demasiado", "Comparte una carpeta de Drive con permiso de lectura y no muevas ni renombres archivos después de enviar el enlace.")
     add_heading(doc, "Lo que no necesitas hacer", 2)
     add_bullet(doc, "No necesitas diseñar la página ni acomodar tamaños para web.")
