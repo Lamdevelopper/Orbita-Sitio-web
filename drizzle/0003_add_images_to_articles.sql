@@ -1,1 +1,1 @@
-ALTER TABLE rticles ADD COLUMN images text DEFAULT '[]' NOT NULL;
+ALTER TABLE `articles` ADD COLUMN `images` text DEFAULT '[]' NOT NULL;
