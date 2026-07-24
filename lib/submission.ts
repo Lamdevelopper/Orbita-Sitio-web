@@ -28,7 +28,7 @@
  * and the image metadata (fileName, caption) is extracted into the images array.
  */
 export function parseSubmission(text: string): ParsedSubmission {
-  const sepMatch = text.match(/\n---\n/);
+  const sepMatch = text.match(/\r?\n---\r?\n/);
   if (!sepMatch || sepMatch.index === undefined) {
     throw new Error("Formato inválido: falta el separador '---' después de los metadatos.");
   }
@@ -38,7 +38,7 @@ export function parseSubmission(text: string): ParsedSubmission {
 
   // --- Parse header fields (case-insensitive keys) ---
   const fields: Record<string, string> = {};
-  for (const line of headerRaw.split("\n")) {
+  for (const line of headerRaw.split(/\r?\n/)) {
     const colonIdx = line.indexOf(":");
     if (colonIdx === -1) continue;
     const key = line.slice(0, colonIdx).trim().toUpperCase();
@@ -51,10 +51,10 @@ export function parseSubmission(text: string): ParsedSubmission {
   if (!fields["CATEGORÍA"]) throw new Error("Formato inválido: falta 'CATEGORÍA' en los metadatos.");
 
   // --- Extract image blocks from body ---
-  // Matches: [IMAGEN N]\nRUTA: ...\nPIE DE FOTO: ...
-  // The lookahead stops the caption at the next [IMAGEN or the string end.
+  // Image metadata is deliberately one line per field so the caption cannot
+  // consume the article text that follows the block.
   const imgBlockRegex =
-    /\[IMAGEN (\d+)\]\s*\nRUTA:\s*(.+?)\s*\nPIE DE FOTO:\s*(.+?)(?=\s*\n\[IMAGEN \d+\]|\s*$)/gs;
+    /\[IMAGEN (\d+)\][ \t]*\r?\nRUTA:[ \t]*([^\r\n]+)\r?\nPIE DE FOTO:[ \t]*([^\r\n]*)(?=\r?\n|$)/g;
 
   const images: ParsedSubmission["images"] = [];
   let match: RegExpExecArray | null;
@@ -68,7 +68,7 @@ export function parseSubmission(text: string): ParsedSubmission {
 
   // Replace image blocks with {{IMG:N}} markers for the body text
   imgBlockRegex.lastIndex = 0;
-  let body = bodyRaw.replace(imgBlockRegex, (_match: string, n: string) => `{{IMG:${n}}}`);
+  const body = bodyRaw.replace(imgBlockRegex, (_match: string, n: string) => `{{IMG:${n}}}`);
 
   return {
     title: fields["TÍTULO"],

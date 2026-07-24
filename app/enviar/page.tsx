@@ -14,9 +14,24 @@ export default function EnviarPage() {
           <p>
             ¿Tienes una historia sobre ciencia, ingeniería o exploración espacial que quieras compartir?
             En Órbita publicamos voces de la comunidad aeroespacial mexicana y latinoamericana.
-            Usa esta guía para preparar tu texto y enviárnoslo.
+            Usa esta guía para preparar una sola carpeta con tu texto y tus imágenes.
           </p>
         </div>
+
+        <section className="template-guide">
+          <h2>Una carpeta por artículo</h2>
+          <p className="lead">
+            Crea una carpeta con un nombre corto, guarda dentro el archivo <code>.txt</code> o <code>.md</code>
+            y agrega todas las imágenes originales. El nombre escrito en <code>RUTA:</code> debe ser idéntico
+            al nombre del archivo, incluida su extensión.
+          </p>
+          <div className="template-example">
+            <pre>{`mi-articulo-cansat/
+  articulo.txt
+  foto-del-evento.webp
+  equipo-en-lanzamiento.jpg`}</pre>
+          </div>
+        </section>
 
         <section className="template-guide">
           <h2>La plantilla</h2>
@@ -65,8 +80,8 @@ dejar en quienes te leen.`}</pre>
               espacial, con conexión a México o Latinoamérica.
             </li>
             <li>
-              <strong>Escribe tu artículo.</strong> Usa la plantilla de arriba. Puedes escribir en cualquier editor de
-              texto (Word, Google Docs, Bloc de notas). Respeta el formato de campos, encabezados y separadores.
+              <strong>Escribe tu artículo.</strong> Usa la plantilla de arriba y guarda el resultado como archivo
+              <code> .txt</code> o <code>.md</code>. También puedes pegar el texto directamente en tu mensaje.
             </li>
             <li>
               <strong>Las secciones con ##</strong> se convierten en subtítulos dentro del artículo. Úsalas para dividir
@@ -77,16 +92,16 @@ dejar en quienes te leen.`}</pre>
               que quieras resaltar.
             </li>
             <li>
-              <strong>Las imágenes con [IMAGEN url]</strong> se insertan en el cuerpo del artículo. Agrega un pie de foto
-              después de una barra vertical si quieres: <code>[IMAGEN url | descripción]</code>.
+              <strong>Numera cada imagen.</strong> Escribe un bloque <code>[IMAGEN 1]</code>, seguido por
+              <code> RUTA:</code> y <code>PIE DE FOTO:</code>. Repite con 2, 3 y así sucesivamente.
             </li>
             <li>
               <strong>Elige una categoría.</strong> Algunas opciones: Ingeniería, Entrevista, Perfil, Aeroespacial,
               Ciencias espaciales, Biotecnología, Comunidad, Investigación.
             </li>
             <li>
-              <strong>Envía tu texto.</strong> Escríbenos con el asunto &ldquo;Propuesta de artículo&rdquo; y pega tu
-              texto completo en el cuerpo del mensaje o adjúntalo como documento.
+              <strong>Envía la carpeta.</strong> Comprímela como <code>.zip</code> y escríbenos con el asunto
+              &ldquo;Propuesta de artículo&rdquo;. Si no puedes comprimirla, comparte el texto y todas las imágenes juntas.
             </li>
           </ol>
         </section>
