@@ -105,7 +105,7 @@ function mapEdition(row: typeof editionTable.$inferSelect): Edition {
     color: "blue",
     articleSlugs: [],
     coverImage: row.coverUrl || undefined,
-    externalUrl: row.externalUrl || undefined,
+    externalUrl: row.pdfUrl || row.externalUrl || undefined,
   };
 }
 
@@ -120,3 +120,4 @@ export async function cmsEdition(slug: string) {
     return row ? mapEdition(row) : null;
   } catch { return null; }
 }
+

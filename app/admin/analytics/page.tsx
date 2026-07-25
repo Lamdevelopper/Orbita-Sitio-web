@@ -6,7 +6,7 @@ import { chatGPTSignOutPath, requireChatGPTUser } from "../../chatgpt-auth";
 export const dynamic = "force-dynamic";
 
 const ANALYTICS_OWNER = "lamoyi.matias@gmail.com";
-const PERIODS = new Set([7, 30, 90]);
+const PERIODS = new Set(["all", "month", "7", "30", "90"]);
 const EVENT_LABELS: Record<string, string> = {
   page_viewed: "Página vista",
   active_read_30_seconds: "Lectura activa (30 s)",
@@ -68,11 +68,11 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
   }
 
   const params = await searchParams;
-  const requestedDays = Number(Array.isArray(params.days) ? params.days[0] : params.days);
-  const days = PERIODS.has(requestedDays) ? requestedDays : 30;
+  const requestedPeriod = String(Array.isArray(params.days) ? params.days[0] : params.days ?? "all");
+  const period = PERIODS.has(requestedPeriod) ? requestedPeriod : "all";
   const selectedArticle = String(Array.isArray(params.article) ? params.article[0] : params.article ?? "").slice(0, 180);
   const selectedEvent = String(Array.isArray(params.event) ? params.event[0] : params.event ?? "").slice(0, 60);
-  const since = periodStart(days);
+  const since = period === "all" ? 0 : period === "month" ? new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime() : periodStart(Number(period));
   const articleOptional = selectedArticle ? 0 : 1;
   const eventOptional = selectedEvent ? 0 : 1;
   const where = sql`occurred_at >= ${since}
@@ -149,7 +149,7 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
 
       <main className="analytics-main">
         <form className="analytics-filters" method="get">
-          <label>Periodo<select name="days" defaultValue={String(days)}><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option></select></label>
+          <label>Periodo<select name="days" defaultValue={period}><option value="all">Todos los tiempos</option><option value="month">Este mes</option><option value="7">Ultimos 7 dias</option><option value="30">Ultimos 30 dias</option><option value="90">Ultimos 90 dias</option></select></label>
           <label>Artículo<select name="article" defaultValue={selectedArticle}><option value="">Todos los artículos</option>{articleOptions.map((row) => <option value={row.value} key={row.value}>{articleTitle(row.value)}</option>)}</select></label>
           <label>Evento<select name="event" defaultValue={selectedEvent}><option value="">Todos los eventos</option>{eventOptions.map((row) => <option value={row.value} key={row.value}>{EVENT_LABELS[row.value] ?? row.value}</option>)}</select></label>
           <button type="submit">Aplicar filtros</button>
@@ -188,3 +188,5 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
     </div>
   );
 }
+
+
