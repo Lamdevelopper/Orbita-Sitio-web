@@ -36,8 +36,10 @@ export type Author = {
   articleCount?: number;
 };
 
-// Re-export CMS layer for consumers that need raw DB access
-export { cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot, type CmsArticle, type CmsSnapshot } from "./cms";
+// Import locally for the resilient helpers below, then expose the same API.
+import { cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot } from "./cms";
+export { cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot };
+export type { CmsArticle, CmsSnapshot } from "./cms";
 
 // Static data (kept in separate files to avoid bloating the main bundle)
 import { articles as _staticArticles } from "../data/articles";

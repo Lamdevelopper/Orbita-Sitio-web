@@ -28,6 +28,10 @@ Corrección:
   las imágenes se validan por tipo permitido y firma binaria.
 - La prueba editorial lee los artículos desde `data/articles.ts`, su ubicación
   actual después de la separación de datos estáticos.
+- La revisión posterior al despliegue detectó que las funciones del CMS estaban
+  reexportadas pero no importadas localmente en `lib/content.ts`; el fallback
+  ocultaba el error. Ahora las lecturas resilientes usan bindings reales y una
+  prueba evita que reaparezca.
 
 ## Política de fallos
 
