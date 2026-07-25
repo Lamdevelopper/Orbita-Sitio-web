@@ -1,6 +1,6 @@
 "use client";
 
-export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="es">
       <body style={{ margin: 0, fontFamily: "Georgia, serif", background: "#fdfdfd", color: "#020202", display: "grid", placeItems: "center", minHeight: "100vh", padding: 32, textAlign: "center" }}>

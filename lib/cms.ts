@@ -110,7 +110,11 @@ function mapEdition(row: typeof editionTable.$inferSelect): Edition {
 }
 
 export async function cmsEditions() {
-  try { return (await getDb().select().from(editionTable).orderBy(desc(editionTable.publishedAt))).map(mapEdition); }
+  try {
+    return (await getDb().select().from(editionTable)
+      .orderBy(desc(editionTable.isCurrent), desc(editionTable.publishedAt)))
+      .map(mapEdition);
+  }
   catch { return [] as Edition[]; }
 }
 

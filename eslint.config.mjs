@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local one-off generators are not application source.
+    "write_rss.js",
+    "write_rss.cjs",
   ]),
 ]);
 

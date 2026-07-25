@@ -51,7 +51,10 @@ import { logError } from "./log";
 
 /** Articulos: CMS primero, fallback a datos estaticos si la DB no responde. */
 export async function getArticles() {
-  try { return await cmsArticles(); }
+  try {
+    const managed = await cmsArticles();
+    return managed.length ? managed : _staticArticles;
+  }
   catch (error) { logError("getArticles", error); return _staticArticles; }
 }
 
@@ -61,7 +64,10 @@ export async function getArticle(slug: string) {
 }
 
 export async function getEditions() {
-  try { return await cmsEditions(); }
+  try {
+    const managed = await cmsEditions();
+    return managed.length ? managed : _staticEditions;
+  }
   catch (error) { logError("getEditions", error); return _staticEditions; }
 }
 

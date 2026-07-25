@@ -29,7 +29,6 @@ The admin route (/admin) has operational tabs for articles, authors, and edition
 - Archived content is hidden from the table and shown under a collapsible Archivados section
 - Import entry point opens the PDF guide directly (public/docs/Guia_entrega_articulos_Orbita.pdf)
 - Analytics supports Todos los tiempos (all) and Este mes (month) period presets
-<<<<<<< HEAD
 
 ## PDF guide (public/docs/Guia_entrega_articulos_Orbita.pdf)
 
@@ -41,5 +40,20 @@ Generated via fpdf2 (Python). Two-page guide covering:
   5. Pre-submission checklist
 
 To regenerate: run the fpdf2 script in public/docs/gen_guide.py.
-=======
->>>>>>> sites/main
+
+## Production resilience
+
+- Public pages must render when D1 is unavailable or has no editorial rows.
+- `lib/content.ts` owns CMS-to-static fallback behavior; callers should use
+  `getArticles`, `getArticle`, `getEditions`, and `getEdition` when a public
+  route needs resilient reads.
+- A missing current edition must never crash the homepage. Edition-only UI is
+  rendered conditionally in `app/page.tsx`.
+- Do not start timers or perform request-bound I/O in Worker module scope.
+  `lib/rate-limit.ts` cleans its bounded in-memory state during requests.
+- Editor access is configured only through `EDITOR_EMAILS` and fails closed.
+- Admin post previews escape submissions before adding preview markup.
+- Media uploads accept only allowlisted image formats with matching signatures;
+  SVG and client-declared arbitrary MIME types are rejected.
+- Follow `SITES_DEPLOY.md` for build, publish, smoke-test, log, and rollback
+  procedures. Never deploy an archive that was built from a different commit.

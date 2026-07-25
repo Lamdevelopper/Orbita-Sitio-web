@@ -6,13 +6,14 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>();
+const MAX_KEYS = 5_000;
 
-setInterval(() => {
+function pruneExpired() {
   const now = Date.now();
   for (const [key, entry] of store) {
     if (entry.resetAt <= now) store.delete(key);
   }
-}, 5 * 60 * 1000).unref?.();
+}
 
 export interface RateLimitConfig {
   maxRequests: number;
@@ -21,6 +22,14 @@ export interface RateLimitConfig {
 
 export function checkRateLimit(key: string, config: RateLimitConfig): { allowed: boolean; retryAfter: number } {
   const now = Date.now();
+
+  // Workers cannot schedule timers in module scope. Clean lazily and keep the
+  // isolate-local map bounded so arbitrary client keys cannot grow it forever.
+  if (store.size >= MAX_KEYS) {
+    pruneExpired();
+    if (store.size >= MAX_KEYS) store.delete(store.keys().next().value as string);
+  }
+
   const entry = store.get(key);
 
   if (!entry || entry.resetAt <= now) {

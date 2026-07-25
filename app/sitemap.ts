@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getOrigin } from "../lib/origin";
-import { getArticles, getEditions, staticArticles, staticEditions } from "../lib/content";
+import { getArticles, getEditions, staticArticles } from "../lib/content";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = await getOrigin();
