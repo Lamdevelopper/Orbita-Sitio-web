@@ -82,12 +82,13 @@ anteriores. Si el `push` del historial completo termina con `HTTP 500`, no
 reescribir ni forzar la rama de GitHub. Crear un commit de despliegue compacto:
 
 1. Obtener el SHA actual de `refs/heads/main` en el remoto de Sites.
-2. Crear un índice temporal desde `HEAD` y quitar de ese índice, sin borrarlos
-   del checkout ni de GitHub, únicamente los materiales que no usa el runtime:
-   `.hermes/`, `Ediciones_Extraer_articulos/`, `articulos_extraidos/`,
-   `output/` y paquetes históricos `orbita-sites-build*.tar.gz`.
-3. Crear con `git commit-tree` un commit basado en ese índice y cuyo padre sea
-   el SHA remoto.
+2. Ejecutar `./scripts/New-SitesDeploymentCommit.ps1 -ParentSha <sha-remoto>`.
+   El script crea un índice temporal y excluye, sin borrarlos del checkout ni
+   de GitHub, `.hermes/`, `Ediciones_Extraer_articulos/`,
+   `articulos_extraidos/`, `output/` y paquetes históricos
+   `orbita-sites-build*.tar.gz`.
+3. Tomar el SHA compacto que imprime el script; este ya verificó las rutas de
+   runtime contra `HEAD`.
 4. Subir ese commit a `main` de Sites con la credencial temporal entregada por
    el proyecto.
 5. Verificar con `ls-remote` que Sites apunta al commit compacto.
