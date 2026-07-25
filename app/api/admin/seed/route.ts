@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { articles, authors } from "../../../../db/schema";
+import { articles, authors, editions } from "../../../../db/schema";
 import { isEditor, routeError } from "../../../../lib/api";
-import { articles as staticArticles } from "../../../../lib/content";
+import { staticEditions, articles as staticArticles } from "../../../../lib/content";
 
 async function getOrCreateAuthor(name: string) {
   const db = getDb();
@@ -32,6 +32,18 @@ async function migrationStatus() {
   return {
     total: staticArticles.length,
     migrated: staticArticles.length - pendingSlugs.length,
+    pending: pendingSlugs.length,
+    pendingSlugs,
+  };
+}
+
+async function editionMigrationStatus() {
+  const rows = await getDb().select({ slug: editions.slug }).from(editions);
+  const existing = new Set(rows.map((row) => row.slug));
+  const pendingSlugs = staticEditions.map((edition) => edition.slug).filter((slug) => !existing.has(slug));
+  return {
+    total: staticEditions.length,
+    migrated: staticEditions.length - pendingSlugs.length,
     pending: pendingSlugs.length,
     pendingSlugs,
   };
@@ -80,5 +92,40 @@ export async function POST(request: Request) {
     }
 
     return Response.json({ imported, skipped, slugs: results, ...(await migrationStatus()) });
+  } catch (error) { return routeError(error); }
+}
+
+export async function PUT(request: Request) {
+  if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  try {
+    const db = getDb();
+    const results: string[] = [];
+    let imported = 0; let skipped = 0;
+
+    for (const edition of staticEditions) {
+      const [existing] = await db.select({ id: editions.id }).from(editions).where(eq(editions.slug, edition.slug)).limit(1);
+      if (existing) { skipped++; continue; }
+
+      const months: Record<string, number> = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
+      const monthMatch = edition.slug.match(/^(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)-(\d{4})$/);
+      const publishedAt = monthMatch
+        ? new Date(parseInt(monthMatch[2]), months[monthMatch[1]], 1)
+        : new Date();
+
+      await db.insert(editions).values({
+        number: parseInt(edition.number),
+        slug: edition.slug,
+        title: edition.title,
+        summary: edition.summary,
+        coverUrl: edition.coverImage || null,
+        externalUrl: edition.externalUrl || null,
+        publishedAt,
+        createdAt: new Date(),
+      });
+      imported++;
+      results.push(edition.slug);
+    }
+
+    return Response.json({ imported, skipped, slugs: results, ...(await editionMigrationStatus()) });
   } catch (error) { return routeError(error); }
 }

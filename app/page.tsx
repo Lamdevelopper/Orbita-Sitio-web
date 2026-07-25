@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NewsletterForm } from "../components/NewsletterForm";
-import { articles, editions } from "../lib/content";
+import { articles } from "../lib/content";
+import { cmsEditions } from "../lib/cms";
 import { cmsSnapshot, type CmsArticle } from "../lib/cms";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function Home() {
   const publicArticles = [...managed, ...legacyFallback];
   const hero = managed.find((article) => article.homepageSlot === "hero") ?? publicArticles[0];
   const rest = publicArticles.filter((article) => article.slug !== hero?.slug);
-  const current = editions[0];
+  const managedEditions = await cmsEditions(); const current = managedEditions[0];
   const currentStories = articles.filter((article) => current.articleSlugs.includes(article.slug));
   const currentMinutes = currentStories.reduce((total, article) => total + article.readingMinutes, 0);
 
