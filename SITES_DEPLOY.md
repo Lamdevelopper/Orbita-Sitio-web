@@ -82,17 +82,23 @@ anteriores. Si el `push` del historial completo termina con `HTTP 500`, no
 reescribir ni forzar la rama de GitHub. Crear un commit de despliegue compacto:
 
 1. Obtener el SHA actual de `refs/heads/main` en el remoto de Sites.
-2. Crear con `git commit-tree` un commit cuyo árbol sea `HEAD^{tree}` y cuyo
-   padre sea ese SHA remoto.
-3. Subir ese commit a `main` de Sites con la credencial temporal entregada por
+2. Crear un índice temporal desde `HEAD` y quitar de ese índice, sin borrarlos
+   del checkout ni de GitHub, únicamente los materiales que no usa el runtime:
+   `.hermes/`, `Ediciones_Extraer_articulos/`, `articulos_extraidos/`,
+   `output/` y paquetes históricos `orbita-sites-build*.tar.gz`.
+3. Crear con `git commit-tree` un commit basado en ese índice y cuyo padre sea
+   el SHA remoto.
+4. Subir ese commit a `main` de Sites con la credencial temporal entregada por
    el proyecto.
-4. Verificar con `ls-remote` que Sites apunta al commit compacto.
-5. Usar el SHA compacto al guardar la versión y el archivo construido desde el
+5. Verificar con `ls-remote` que Sites apunta al commit compacto.
+6. Usar el SHA compacto al guardar la versión y el archivo construido desde el
    mismo árbol.
 
 Este procedimiento conserva todo el historial en GitHub y transfiere a Sites
-solo la diferencia necesaria. Antes de publicar, comprobar que
-`git diff HEAD^{tree} <commit-compacto>^{tree}` no produzca salida.
+solo la diferencia necesaria. Antes de publicar, comprobar que no exista diff
+entre `HEAD` y el commit compacto para las rutas de runtime: `.openai`, `app`,
+`build`, `components`, `data`, `db`, `drizzle`, `lib`, `public`, `tests`,
+`worker`, archivos de configuración y manifiestos de paquetes.
 
 ## Pruebas de humo
 
