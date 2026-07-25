@@ -47,6 +47,8 @@ To regenerate: run the fpdf2 script in public/docs/gen_guide.py.
 - `lib/content.ts` owns CMS-to-static fallback behavior; callers should use
   `getArticles`, `getArticle`, `getEditions`, and `getEdition` when a public
   route needs resilient reads.
+- CMS functions used by those helpers must be local imports; a re-export alone
+  does not create callable bindings in the module.
 - A missing current edition must never crash the homepage. Edition-only UI is
   rendered conditionally in `app/page.tsx`.
 - Do not start timers or perform request-bound I/O in Worker module scope.

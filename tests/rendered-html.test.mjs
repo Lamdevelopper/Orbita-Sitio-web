@@ -3,19 +3,21 @@ import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("ships the Orbita Aerospace AAFI editorial surface", async () => {
-  const [home, layout, header, footer, consent, content, editions, styles, dashboard, articlePage] = await Promise.all([
+  const [home, layout, header, footer, consent, content, contentModule, editions, styles, dashboard, articlePage] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/SiteHeader.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/SiteFooter.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/CookieConsent.tsx", import.meta.url), "utf8"),
     readFile(new URL("../data/articles.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/content.ts", import.meta.url), "utf8"),
     readFile(new URL("../data/editions.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/analytics/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/articulos/[slug]/page.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(home, /NewsletterForm/);
+  assert.match(contentModule, /import \{ cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot \} from "\.\/cms"/);
   assert.match(home, /const current = \(await getEditions\(\)\)\[0\] \?\? null/);
   assert.match(home, /current \? <section className="edition-feature"/);
   assert.match(content, /México construye su futuro espacial/i);
