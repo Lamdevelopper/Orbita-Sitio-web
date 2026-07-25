@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { NewsletterForm } from "../components/NewsletterForm";
-import { articles } from "../lib/content";
-import { cmsEditions } from "../lib/cms";
-import { cmsSnapshot, type CmsArticle } from "../lib/cms";
+import { cmsEditions, cmsSnapshot, type CmsArticle, staticArticles } from "../lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +16,12 @@ function sortManaged(items: CmsArticle[]) {
 export default async function Home() {
   const snapshot = await cmsSnapshot();
   const managed = sortManaged(snapshot.articles.filter((article) => article.homepageSlot !== "hidden"));
-  const legacyFallback = articles.filter((article) => !snapshot.managedSlugs.has(article.slug));
+  const legacyFallback = staticArticles.filter((article) => !snapshot.managedSlugs.has(article.slug));
   const publicArticles = [...managed, ...legacyFallback];
   const hero = managed.find((article) => article.homepageSlot === "hero") ?? publicArticles[0];
   const rest = publicArticles.filter((article) => article.slug !== hero?.slug);
   const managedEditions = await cmsEditions(); const current = managedEditions[0];
-  const currentStories = articles.filter((article) => current.articleSlugs.includes(article.slug));
+  const currentStories = staticArticles.filter((article) => current.articleSlugs.includes(article.slug));
   const currentMinutes = currentStories.reduce((total, article) => total + article.readingMinutes, 0);
 
   return <>

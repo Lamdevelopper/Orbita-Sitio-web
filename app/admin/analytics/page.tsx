@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { articles } from "../../../lib/content";
+import { staticArticles } from "../../../lib/content";
 import { chatGPTSignOutPath, requireChatGPTUser } from "../../chatgpt-auth";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,7 @@ function percent(value: number, total: number) {
 
 function articleTitle(slug: string | null) {
   if (!slug) return "Sitio general";
-  return articles.find((article) => article.slug === slug)?.title ?? slug;
+  return staticArticles.find((article) => article.slug === slug)?.title ?? slug;
 }
 
 export default async function AnalyticsDashboard({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

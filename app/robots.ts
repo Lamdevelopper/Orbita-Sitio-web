@@ -1,2 +1,10 @@
 import type { MetadataRoute } from "next";
-export default function robots():MetadataRoute.Robots{return{rules:{userAgent:"*",allow:"/",disallow:["/api/"]},sitemap:"https://orbita-revista.example/sitemap.xml"}}
+import { getOrigin } from "../lib/origin";
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const origin = await getOrigin();
+  return {
+    rules: { userAgent: "*", allow: "/", disallow: ["/api/"] },
+    sitemap: `${origin}/sitemap.xml`,
+  };
+}

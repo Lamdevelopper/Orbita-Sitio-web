@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { articles, authors, editions } from "../../../../db/schema";
 import { isEditor, routeError } from "../../../../lib/api";
-import { staticEditions, articles as staticArticles } from "../../../../lib/content";
+import { staticEditions, staticArticles } from "../../../../lib/content";
 
 async function getOrCreateAuthor(name: string) {
   const db = getDb();
