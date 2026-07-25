@@ -29,6 +29,7 @@ The admin route (/admin) has operational tabs for articles, authors, and edition
 - Archived content is hidden from the table and shown under a collapsible Archivados section
 - Import entry point opens the PDF guide directly (public/docs/Guia_entrega_articulos_Orbita.pdf)
 - Analytics supports Todos los tiempos (all) and Este mes (month) period presets
+<<<<<<< HEAD
 
 ## PDF guide (public/docs/Guia_entrega_articulos_Orbita.pdf)
 
@@ -40,3 +41,5 @@ Generated via fpdf2 (Python). Two-page guide covering:
   5. Pre-submission checklist
 
 To regenerate: run the fpdf2 script in public/docs/gen_guide.py.
+=======
+>>>>>>> sites/main
