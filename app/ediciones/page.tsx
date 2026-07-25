@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { editions } from "../../lib/content";
 import { cmsEditions } from "../../lib/cms";
 
 export const metadata: Metadata = { title: "Ediciones", description: "El archivo completo de la revista Órbita." };
@@ -8,8 +7,7 @@ export const metadata: Metadata = { title: "Ediciones", description: "El archivo
 export const dynamic = "force-dynamic";
 
 export default async function EditionsPage() {
-  const managed = await cmsEditions();
-  const allEditions = [...managed, ...editions.filter((edition) => !managed.some((item) => item.slug === edition.slug))];
+  const allEditions = await cmsEditions();
   return (
     <div className="page-shell listing-page">
       <div className="listing-intro">

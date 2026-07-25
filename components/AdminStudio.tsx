@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Article = { id: number; slug: string; title: string; dek: string; body: string; category: string; authorId: number; editionId: number | null; status: string; homepageSlot: string; homepageRank: number; heroUrl: string | null; heroCaption: string | null; readingMinutes: number; tags: string[]; updatedAt: string };
 type Author = { id: number; name: string; slug: string; bio: string; area: string; avatarUrl: string | null; articleCount: number };
@@ -31,6 +31,8 @@ export function AdminStudio({ email }: { email: string }) {
   const [displacedSlugs, setDisplacedSlugs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverFileRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     const [articleResponse, authorResponse, editionResponse] = await Promise.all([
@@ -95,6 +97,21 @@ export function AdminStudio({ email }: { email: string }) {
     catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo quitar el autor."); } finally { setBusy(false); }
   }
 
+  async function uploadCover(file: File) {
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/media", { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo subir la imagen.");
+      setEdition({ ...edition, coverUrl: data.url });
+      setMessage("Portada subida correctamente.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo subir la portada."); }
+    finally { setUploadingCover(false); }
+  }
+
   async function saveEdition(event: React.FormEvent) {
     event.preventDefault(); setBusy(true);
     try {
@@ -117,7 +134,7 @@ export function AdminStudio({ email }: { email: string }) {
 
     {tab === "authors" && <div className="admin-workspace"><form className="admin-form" onSubmit={saveAuthor}><span className="eyebrow">{editingAuthor ? "EDITAR AUTOR" : "NUEVO AUTOR"}</span><label>Nombre<input required value={author.name} onChange={(event) => setAuthor({ ...author, name: event.target.value, slug: author.slug || slugify(event.target.value) })} /></label><label>Slug<input value={author.slug} onChange={(event) => setAuthor({ ...author, slug: slugify(event.target.value) })} /></label><label>Area<input value={author.area} onChange={(event) => setAuthor({ ...author, area: event.target.value })} /></label><label>Descripcion<textarea value={author.bio} onChange={(event) => setAuthor({ ...author, bio: event.target.value })} /></label><label>Foto de perfil (URL)<input value={author.avatarUrl || ""} onChange={(event) => setAuthor({ ...author, avatarUrl: event.target.value || null })} /></label><button disabled={busy}>{editingAuthor ? "Guardar autor" : "Anadir autor"}</button></form><section className="admin-list"><span className="eyebrow">AUTORES REGISTRADOS</span><h2>Equipo editorial</h2>{authors.map((item) => <article key={item.id}><div className="admin-author-row">{item.avatarUrl ? <img className="admin-avatar" src={item.avatarUrl} alt="" /> : <span className="author-initial">{item.name.charAt(0)}</span>}<div><h3>{item.name}</h3><p>{item.area} · {item.articleCount} articulos</p></div></div><div className="admin-actions"><button onClick={() => { setEditingAuthor(item.id); setAuthor({ name: item.name, slug: item.slug, bio: item.bio, area: item.area, avatarUrl: item.avatarUrl }); }}>Editar</button><button className="admin-danger-button" onClick={() => removeAuthor(item)}>Quitar</button></div></article>)}</section></div>}
 
-    {tab === "editions" && <div className="admin-workspace"><form className="admin-form" onSubmit={saveEdition}><span className="eyebrow">{editingEdition ? "EDITAR EDICION" : "NUEVA EDICION"}</span><label>Numero<input required type="number" min="1" value={edition.number} onChange={(event) => setEdition({ ...edition, number: Number(event.target.value) })} /></label><label>Titulo<input required value={edition.title} onChange={(event) => setEdition({ ...edition, title: event.target.value, slug: edition.slug || slugify(event.target.value) })} /></label><label>Slug<input value={edition.slug} onChange={(event) => setEdition({ ...edition, slug: slugify(event.target.value) })} /></label><label>Fecha de publicacion<input type="date" value={edition.publishedAt?.slice(0, 10) || ""} onChange={(event) => setEdition({ ...edition, publishedAt: event.target.value || null })} /></label><label>Descripcion<textarea value={edition.summary} onChange={(event) => setEdition({ ...edition, summary: event.target.value })} /></label><label>Enlace de la revista<input value={edition.externalUrl || ""} onChange={(event) => setEdition({ ...edition, externalUrl: event.target.value || null })} /></label><label>URL PDF<input value={edition.pdfUrl || ""} onChange={(event) => setEdition({ ...edition, pdfUrl: event.target.value || null })} /></label><label>Portada URL<input value={edition.coverUrl || ""} onChange={(event) => setEdition({ ...edition, coverUrl: event.target.value || null })} /></label><label>Texto alternativo de portada<input value={edition.coverAlt || ""} onChange={(event) => setEdition({ ...edition, coverAlt: event.target.value || null })} /></label><label className="admin-check"><input type="checkbox" checked={edition.isCurrent} onChange={(event) => setEdition({ ...edition, isCurrent: event.target.checked })} /> Edicion actual</label><button disabled={busy}>{editingEdition ? "Guardar edicion" : "Crear edicion"}</button></form><section className="admin-list"><span className="eyebrow">ARCHIVO CMS</span><h2>Ediciones editables</h2>{editions.map((item) => <article key={item.id}><div><span className="admin-pill">No. {item.number}</span><h3>{item.title}</h3><p>{item.publishedAt ? new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" }).format(new Date(item.publishedAt)) : "Sin fecha"}{item.isCurrent ? " · Edicion actual" : ""}</p></div><button onClick={() => { setEditingEdition(item.id); setEdition({ ...item, publishedAt: item.publishedAt ? item.publishedAt.slice(0, 10) : null }); }}>Editar</button></article>)}</section></div>}
+    {tab === "editions" && <div className="admin-workspace"><form className="admin-form" onSubmit={saveEdition}><span className="eyebrow">{editingEdition ? "EDITAR EDICION" : "NUEVA EDICION"}</span><label>Numero<input required type="number" min="1" value={edition.number} onChange={(event) => setEdition({ ...edition, number: Number(event.target.value) })} /></label><label>Titulo<input required value={edition.title} onChange={(event) => setEdition({ ...edition, title: event.target.value, slug: edition.slug || slugify(event.target.value) })} /></label><label>Slug<input value={edition.slug} onChange={(event) => setEdition({ ...edition, slug: slugify(event.target.value) })} /></label><label>Fecha de publicacion<input type="date" value={edition.publishedAt?.slice(0, 10) || ""} onChange={(event) => setEdition({ ...edition, publishedAt: event.target.value || null })} /></label><label>Descripcion<textarea value={edition.summary} onChange={(event) => setEdition({ ...edition, summary: event.target.value })} /></label><label>Enlace de la revista<input value={edition.externalUrl || ""} onChange={(event) => setEdition({ ...edition, externalUrl: event.target.value || null })} /></label><label>URL PDF<input value={edition.pdfUrl || ""} onChange={(event) => setEdition({ ...edition, pdfUrl: event.target.value || null })} /></label><label>Portada{edition.coverUrl && <img className="admin-cover-preview" src={edition.coverUrl} alt="Previsualizacion de portada" />}<input ref={coverFileRef} type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadCover(file); }} /><input value={edition.coverUrl || ""} placeholder="O pega una URL" onChange={(event) => setEdition({ ...edition, coverUrl: event.target.value || null })} /></label><label>Texto alternativo<textarea value={edition.coverAlt || ""} placeholder="Describe la portada para lectores de pantalla" onChange={(event) => setEdition({ ...edition, coverAlt: event.target.value || null })} /></label><label className="admin-check"><input type="checkbox" checked={edition.isCurrent} onChange={(event) => setEdition({ ...edition, isCurrent: event.target.checked })} /> Edicion actual</label><button disabled={busy || uploadingCover}>{uploadingCover ? "Subiendo portada..." : busy ? "Guardando..." : editingEdition ? "Guardar edicion" : "Crear edicion"}</button></form><section className="admin-list"><span className="eyebrow">ARCHIVO CMS</span><h2>Ediciones editables</h2>{editions.map((item) => <article key={item.id}><div><span className="admin-pill">No. {item.number}</span><h3>{item.title}</h3><p>{item.publishedAt ? new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" }).format(new Date(item.publishedAt)) : "Sin fecha"}{item.isCurrent ? " · Edicion actual" : ""}</p></div><button onClick={() => { setEditingEdition(item.id); setEdition({ ...item, publishedAt: item.publishedAt ? item.publishedAt.slice(0, 10) : null }); }}>Editar</button></article>)}</section></div>}
   </main>;
 }
 
