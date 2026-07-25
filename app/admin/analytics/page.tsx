@@ -1,11 +1,11 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { articles } from "../../../lib/content";
+import { getAnalyticsEmails } from "../../../lib/api";
+import { staticArticles } from "../../../lib/content";
 import { chatGPTSignOutPath, requireChatGPTUser } from "../../chatgpt-auth";
 
 export const dynamic = "force-dynamic";
 
-const ANALYTICS_OWNER = "lamoyi.matias@gmail.com";
 const PERIODS = new Set(["all", "month", "7", "30", "90"]);
 const EVENT_LABELS: Record<string, string> = {
   page_viewed: "Página vista",
@@ -51,12 +51,12 @@ function percent(value: number, total: number) {
 
 function articleTitle(slug: string | null) {
   if (!slug) return "Sitio general";
-  return articles.find((article) => article.slug === slug)?.title ?? slug;
+  return staticArticles.find((article) => article.slug === slug)?.title ?? slug;
 }
 
 export default async function AnalyticsDashboard({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requireChatGPTUser("/admin/analytics");
-  if (user.email.toLowerCase() !== ANALYTICS_OWNER) {
+  if (!getAnalyticsEmails().includes(user.email.toLowerCase())) {
     return (
       <div className="analytics-denied page-shell">
         <span className="eyebrow">ACCESO RESTRINGIDO</span>

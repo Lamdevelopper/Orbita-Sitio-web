@@ -9,16 +9,23 @@ type ParsedSubmission = {
 };
 type Edition = { id: number; number: number; title: string };
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[character] ?? character);
+}
+
 function parseBodyHtml(body: string, imageUrls: Map<string, string>, images: ImageRef[], captions: Map<string, string>): string {
-  let html = body;
+  // Escape the submission before adding the small HTML subset used by preview.
+  let html = escapeHtml(body);
   for (const img of images) {
     const marker = "{{IMG:" + img.ref.replace(/^IMAGEN /, "") + "}}";
     const url = imageUrls.get(img.ref);
     const cap = captions.get(img.ref) ?? img.caption ?? "";
     if (url) {
-      html = html.split(marker).join('<figure><img src="' + url + '" alt="' + (cap || img.fileName) + '" />' + (cap ? '<figcaption>' + cap + '</figcaption>' : '') + '</figure>');
+      html = html.split(marker).join('<figure><img src="' + escapeHtml(url) + '" alt="' + escapeHtml(cap || img.fileName) + '" />' + (cap ? '<figcaption>' + escapeHtml(cap) + '</figcaption>' : '') + '</figure>');
     } else {
-      html = html.split(marker).join('<div class="post-placeholder"><span>[IMG]</span> ' + img.fileName + '</div>');
+      html = html.split(marker).join('<div class="post-placeholder"><span>[IMG]</span> ' + escapeHtml(img.fileName) + '</div>');
     }
   }
   const lines = html.split("\n"); let out = ""; let para = false;

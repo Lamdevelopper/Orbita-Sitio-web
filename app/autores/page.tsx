@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { asc, count, eq } from "drizzle-orm";
 import { getDb } from "../../db";
 import { articles as articleTable, authors as authorTable } from "../../db/schema";
-import { authors as staticAuthors, articles as staticArticles } from "../../lib/content";
+import { staticAuthors, staticArticles } from "../../lib/content";
 
 export const metadata: Metadata = { title: "Autores" };
 export const dynamic = "force-dynamic";

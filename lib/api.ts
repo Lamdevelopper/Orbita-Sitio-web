@@ -1,11 +1,28 @@
 import { env } from "cloudflare:workers";
 
-const FALLBACK_EMAILS = "lamoyi.matias@gmail.com";
+type Runtime = { EDITOR_API_KEY?: string; EDITOR_EMAILS?: string; ANALYTICS_OWNER?: string };
+
+function configuredEmails(value?: string) {
+  return (value ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
+}
+
+export function getEditorEmails() {
+  return configuredEmails((env as unknown as Runtime).EDITOR_EMAILS);
+}
+
+export function getAnalyticsEmails() {
+  const runtime = env as unknown as Runtime;
+  return configuredEmails(runtime.ANALYTICS_OWNER ?? runtime.EDITOR_EMAILS);
+}
+
 export function isEditor(request: Request) {
   const email = request.headers.get("oai-authenticated-user-email")?.toLowerCase();
-  if (!email) { const configured = (env as unknown as { EDITOR_API_KEY?: string }).EDITOR_API_KEY; if (!configured) return false; const header = request.headers.get("authorization"); return header === `Bearer ${configured}`; }
-  const editorEmails = (env as unknown as { EDITOR_EMAILS?: string }).EDITOR_EMAILS || FALLBACK_EMAILS;
-  return editorEmails.split(",").map((item: string) => item.trim().toLowerCase()).includes(email);
+  if (!email) {
+    const configured = (env as unknown as Runtime).EDITOR_API_KEY;
+    if (!configured) return false;
+    return request.headers.get("authorization") === `Bearer ${configured}`;
+  }
+  return getEditorEmails().includes(email);
 }
 export function cleanText(value: unknown, max = 5000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 export function validSlug(value: string) { return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value); }

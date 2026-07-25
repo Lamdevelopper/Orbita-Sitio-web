@@ -3,30 +3,33 @@ import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("ships the Orbita Aerospace AAFI editorial surface", async () => {
-  const [home, layout, header, footer, consent, content, styles, dashboard, articlePage] = await Promise.all([
+  const [home, layout, header, footer, consent, content, editions, styles, dashboard, articlePage] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/SiteHeader.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/SiteFooter.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/CookieConsent.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../lib/content.ts", import.meta.url), "utf8"),
+    readFile(new URL("../data/articles.ts", import.meta.url), "utf8"),
+    readFile(new URL("../data/editions.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/analytics/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/articulos/[slug]/page.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(home, /NewsletterForm/);
+  assert.match(home, /const current = \(await getEditions\(\)\)\[0\] \?\? null/);
+  assert.match(home, /current \? <section className="edition-feature"/);
   assert.match(content, /México construye su futuro espacial/i);
   assert.match(content, /Ari Huizar Mayo/);
-  assert.match(content, /DaRQBDaDVzE/);
-  assert.match(content, /9874b3c7ea/);
-  assert.match(content, /7a7fc16697/);
+  assert.match(editions, /DaRQBDaDVzE/);
+  assert.match(editions, /9874b3c7ea/);
+  assert.match(editions, /7a7fc16697/);
   assert.match(consent, /Tu privacidad/i);
   assert.match(layout, /Órbita · Aerospace AAFI/i);
   assert.match(content, /Jorge Ferrer: construir tecnología espacial desde México/i);
-  assert.match(content, /Junio de 2026/i);
+  assert.match(editions, /Junio de 2026/i);
   assert.match(header, /aafi-logo\.svg/i);
   assert.match(styles, /analytics-dashboard/i);
-  assert.match(dashboard, /lamoyi\.matias@gmail\.com/i);
+  assert.match(dashboard, /getAnalyticsEmails/i);
   assert.match(dashboard, /requireChatGPTUser/i);
   assert.match(dashboard, /COUNT\(DISTINCT CASE WHEN event_name = 'page_viewed' THEN anonymous_id END\)/i);
   assert.match(dashboard, /article_slug IS NOT NULL/i);

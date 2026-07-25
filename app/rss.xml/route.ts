@@ -1,3 +1,31 @@
-import { articles } from "../../lib/content";
-const escape=(x:string)=>x.replace(/[<>&'\"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]!));
-export async function GET(){const base="https://orbita-aerospace-aafi.lamoyi-matias.chatgpt.site";const items=articles.map(a=>`<item><title>${escape(a.title)}</title><link>${base}/articulos/${a.slug}</link><guid>${base}/articulos/${a.slug}</guid><description>${escape(a.dek)}</description></item>`).join("");return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Órbita</title><link>${base}</link><description>Revista universitaria de divulgación científica</description>${items}</channel></rss>`,{headers:{"content-type":"application/rss+xml; charset=utf-8"}})}
+import { getOrigin } from "../../lib/origin";
+import { getArticles, staticArticles } from "../../lib/content";
+
+const esc = (x) =>
+  x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+export async function GET() {
+  const origin = await getOrigin();
+  const cmsArticles = await getArticles();
+  const seen = new Set();
+  const all = [...cmsArticles, ...staticArticles].filter(a => {
+    if (seen.has(a.slug)) return false;
+    seen.add(a.slug);
+    return true;
+  });
+
+  let items = "";
+  for (const a of all) {
+    items += "<item><title>" + esc(a.title) + "</title>";
+    items += "<link>" + origin + "/articulos/" + a.slug + "</link>";
+    items += "<guid>" + origin + "/articulos/" + a.slug + "</guid>";
+    items += "<description>" + esc(a.dek) + "</description></item>";
+  }
+
+  const head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+  const rss = head + "<rss version=\"2.0\"><channel><title>Orbita</title><link>" + origin + "</link><description>Revista universitaria de divulgacion cientifica</description>" + items + "</channel></rss>";
+
+  return new Response(rss, {
+    headers: { "content-type": "application/rss+xml; charset=utf-8" },
+  });
+}
