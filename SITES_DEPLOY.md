@@ -75,6 +75,25 @@ prueba o paquetes `.tar.gz`. Preparar únicamente los archivos revisados.
 El SHA entregado a Sites y el código usado para crear el archivo deben ser el
 mismo. No reutilizar archivos de versiones anteriores.
 
+### Cuando el historial no cabe en el remoto de Sites
+
+El historial de este repositorio contiene adjuntos y PDFs grandes de etapas
+anteriores. Si el `push` del historial completo termina con `HTTP 500`, no
+reescribir ni forzar la rama de GitHub. Crear un commit de despliegue compacto:
+
+1. Obtener el SHA actual de `refs/heads/main` en el remoto de Sites.
+2. Crear con `git commit-tree` un commit cuyo árbol sea `HEAD^{tree}` y cuyo
+   padre sea ese SHA remoto.
+3. Subir ese commit a `main` de Sites con la credencial temporal entregada por
+   el proyecto.
+4. Verificar con `ls-remote` que Sites apunta al commit compacto.
+5. Usar el SHA compacto al guardar la versión y el archivo construido desde el
+   mismo árbol.
+
+Este procedimiento conserva todo el historial en GitHub y transfiere a Sites
+solo la diferencia necesaria. Antes de publicar, comprobar que
+`git diff HEAD^{tree} <commit-compacto>^{tree}` no produzca salida.
+
 ## Pruebas de humo
 
 ```powershell
