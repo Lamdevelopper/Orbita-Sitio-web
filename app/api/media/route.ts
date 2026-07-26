@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { isEditor } from "../../../lib/api";
+import { adminGuard } from "../../../lib/newsletter-service";
 
 type Runtime = { MEDIA?: R2Bucket };
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -20,7 +20,8 @@ function hasImageSignature(bytes: Uint8Array, type: string) {
 }
 
 export async function POST(request: Request) {
-  if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const denied = adminGuard(request);
+  if (denied) return denied;
 
   const file = (await request.formData()).get("file");
   if (!(file instanceof File) || !extensions[file.type])

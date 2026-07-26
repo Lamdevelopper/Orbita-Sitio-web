@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 type ImageRef = { ref: string; fileName: string; caption?: string };
 type ParsedSubmission = {
   title: string; author: string; category: string; dek: string; edition?: string;
-  body: string; images: ImageRef[];
+  readingMinutes?: number; body: string; images: ImageRef[];
 };
 type Edition = { id: number; number: number; title: string };
 
@@ -47,6 +47,7 @@ export function PostEditor({ email }: { email: string }) {
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroUrl, setHeroUrl] = useState("");
   const [heroCaption, setHeroCaption] = useState("");
+  const [readingMinutes, setReadingMinutes] = useState(5);
   const [editionId, setEditionId] = useState("");
   const [homepageSlot, setHomepageSlot] = useState("feed");
   const [homepageRank, setHomepageRank] = useState(10);
@@ -72,6 +73,7 @@ export function PostEditor({ email }: { email: string }) {
       const res = await fetch("/api/submissions/parse", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
       const data = await res.json(); if (!res.ok) throw new Error(data.error || "Error al analizar");
       setSubmission(data.submission);
+      setReadingMinutes(data.submission.readingMinutes || 5);
       const capMap = new Map<string, string>();
       for (const img of data.submission.images || []) { if (img.caption) capMap.set(img.ref, img.caption); }
       setImageCaptions(capMap); setImageFiles(new Map()); setImageUrls(new Map());
@@ -112,7 +114,7 @@ export function PostEditor({ email }: { email: string }) {
       }));
       const body = {
         title: submission.title, author: submission.author, category: submission.category,
-        dek: submission.dek, body: submission.body, editionId: editionId || undefined,
+        dek: submission.dek, body: submission.body, readingMinutes, editionId: editionId || undefined,
         homepageSlot, homepageRank, status,
         heroUrl: finalHeroUrl || undefined,
         heroCaption: heroCaption || undefined,
@@ -123,10 +125,10 @@ export function PostEditor({ email }: { email: string }) {
       });
       const data = await res.json(); if (!res.ok) throw new Error(data.error || "No se pudo publicar");
       setMessage("Articulo publicado correctamente.");
-      setSubmission(null); setText(""); setHeroFile(null); setHeroUrl(""); setHeroCaption("");
+      setSubmission(null); setText(""); setHeroFile(null); setHeroUrl(""); setHeroCaption(""); setReadingMinutes(5);
     } catch (err) { setMessage(err instanceof Error ? err.message : "No se pudo guardar"); }
     finally { setBusy(false); }
-  }, [submission, imageFiles, imageUrls, imageCaptions, heroFile, heroUrl, heroCaption, editionId, homepageSlot, homepageRank, status, uploadToMedia]);
+  }, [submission, imageFiles, imageUrls, imageCaptions, heroFile, heroUrl, heroCaption, readingMinutes, editionId, homepageSlot, homepageRank, status, uploadToMedia]);
 
   const bodyHtml = submission ? parseBodyHtml(submission.body, imageUrls, submission.images, imageCaptions) : "";
 
@@ -159,6 +161,7 @@ export function PostEditor({ email }: { email: string }) {
         </div>}
         <div className="post-meta-fields">
           <label>Edicion<select value={editionId} onChange={e => setEditionId(e.target.value)}><option value="">Sin edicion</option>{editions.map(ed => <option value={ed.id} key={ed.id}>No {ed.number} - {ed.title}</option>)}</select></label>
+          <label>Minutos de lectura<input type="number" min="1" max="90" value={readingMinutes} onChange={e => setReadingMinutes(Math.max(1, Math.min(90, Number(e.target.value) || 1)))} /></label>
           <div className="admin-pair"><label>Ubicacion<select value={homepageSlot} onChange={e => setHomepageSlot(e.target.value)}><option value="hero">Hero</option><option value="featured">Destacado</option><option value="feed">Feed</option><option value="hidden">No mostrar</option></select></label><label>Prioridad<input type="number" min={0} value={homepageRank} onChange={e => setHomepageRank(Number(e.target.value))} /></label></div>
           <label>Estado<select value={status} onChange={e => setStatus(e.target.value)}><option value="draft">Borrador</option><option value="published">Publicado</option></select></label>
           <div className="post-hero-section"><h3>Imagen principal</h3>
