@@ -108,7 +108,10 @@ def new_numbering_instance(doc, start=1):
     style = doc.styles["List Number"]
     base_num_id = style._element.pPr.numPr.numId.val
     numbering = doc.part.numbering_part.element
-    base_num = next(node for node in numbering.findall(qn("w:num")) if int(node.get(qn("w:numId"))) == base_num_id)
+    base_num = next(
+        node for node in numbering.findall(qn("w:num"))
+        if int(node.get(qn("w:numId"))) == base_num_id
+    )
     abstract_id = base_num.find(qn("w:abstractNumId")).get(qn("w:val"))
     new_id = max(int(node.get(qn("w:numId"))) for node in numbering.findall(qn("w:num"))) + 1
     num = OxmlElement("w:num")
@@ -229,13 +232,13 @@ def configure_document(doc):
     title.font.color.rgb = RGBColor.from_string(NAVY)
     title.paragraph_format.space_after = Pt(8)
 
-    subtitle = doc.styles["Subtitle"]
-    subtitle.font.name = "Calibri"
-    subtitle._element.rPr.rFonts.set(qn("w:ascii"), "Calibri")
-    subtitle._element.rPr.rFonts.set(qn("w:hAnsi"), "Calibri")
-    subtitle.font.size = Pt(13.5)
-    subtitle.font.color.rgb = RGBColor.from_string(MUTED)
-    subtitle.paragraph_format.space_after = Pt(20)
+    subtitle_s = doc.styles["Subtitle"]
+    subtitle_s.font.name = "Calibri"
+    subtitle_s._element.rPr.rFonts.set(qn("w:ascii"), "Calibri")
+    subtitle_s._element.rPr.rFonts.set(qn("w:hAnsi"), "Calibri")
+    subtitle_s.font.size = Pt(13.5)
+    subtitle_s.font.color.rgb = RGBColor.from_string(MUTED)
+    subtitle_s.paragraph_format.space_after = Pt(20)
 
     for list_name in ("List Number", "List Bullet"):
         style = doc.styles[list_name]
@@ -262,13 +265,13 @@ def configure_document(doc):
     header = section.header
     hp = header.paragraphs[0]
     hp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    hr = hp.add_run("ÓRBITA  ·  GUÍA DE COLABORACIÓN")
+    hr = hp.add_run("ORBITA  ?  GUIA DE COLABORACION")
     set_run_font(hr, size=8.5, color=BLUE, bold=True)
 
     footer = section.footer
     fp = footer.paragraphs[0]
     fp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    fr = fp.add_run("Órbita · Aerospace AAFI     ")
+    fr = fp.add_run("Orbita ? Aerospace AAFI     ")
     set_run_font(fr, size=8.5, color=MUTED)
     add_field(fp, "PAGE")
 
@@ -276,149 +279,301 @@ def configure_document(doc):
 def build():
     doc = Document()
     configure_document(doc)
-    doc.core_properties.title = "Guía para entregar artículos a Órbita"
+    doc.core_properties.title = "Guia para entregar articulos a Orbita"
     doc.core_properties.subject = "Plantilla editorial para escritores"
-    doc.core_properties.author = "Equipo editorial de Órbita"
+    doc.core_properties.author = "Equipo editorial de Orbita"
 
-    # Page 1: operational customer-pack opening.
-    kicker = add_para(doc, "GUÍA DE COLABORACIÓN", color=RED, size=10, after=4)
+    # ===== PAGINA 1 - PORTADA + PROCESO =====
+    kicker = add_para(doc, "GUIA DE COLABORACION", color=RED, size=10, after=4)
     kicker.runs[0].bold = True
-    title = doc.add_paragraph(style="Title")
-    title.add_run("Cómo entregar tu artículo a Órbita")
-    subtitle = doc.add_paragraph(style="Subtitle")
-    subtitle.add_run("Una carpeta, una plantilla sencilla y todas tus imágenes listas para publicar.")
-    add_callout(doc, "Lo más importante", "No necesitas saber de páginas web. Entrega una carpeta ordenada; el equipo editorial se encarga de revisar, dar formato y publicar.")
+    title_p = doc.add_paragraph(style="Title")
+    title_p.add_run("Como entregar tu articulo a Orbita")
+    subtitle_p = doc.add_paragraph(style="Subtitle")
+    subtitle_p.add_run("Una carpeta, una plantilla, una vista previa y el editor publica.")
+
+    add_callout(doc, "Lo mas importante",
+        "No necesitas saber de paginas web ni tener acceso al CMS. "
+        "Entrega una carpeta ordenada con tus archivos; el equipo editorial "
+        "revisa, corrige y publica.")
+
     add_heading(doc, "El proceso en cinco pasos", 1)
     process_num = new_numbering_instance(doc)
-    add_numbered(doc, "Crea una carpeta.", "Ponle un nombre corto relacionado con tu artículo.", process_num)
-    add_numbered(doc, "Copia la plantilla.", "Guárdala como articulo.txt o articulo.md dentro de la carpeta.", process_num)
-    add_numbered(doc, "Escribe sin borrar las etiquetas.", "Completa TÍTULO, AUTOR, CATEGORÍA, BAJADA y, si aplica, EDICIÓN.", process_num)
-    add_numbered(doc, "Agrega tus imágenes.", "Guarda los archivos originales en la misma carpeta y escribe su nombre exacto en RUTA.", process_num)
-    add_numbered(doc, "Comprime y envía.", "Convierte la carpeta en un archivo .zip y mándalo al responsable editorial.", process_num)
-    add_heading(doc, "Qué hará el editor", 2)
-    add_bullet(doc, "Revisará el texto y abrirá una vista previa antes de publicar.")
-    add_bullet(doc, "Subirá las imágenes y conservará los pies de foto que escribiste.")
-    add_bullet(doc, "Te avisará si falta un dato o si una imagen necesita mayor resolución.")
-    add_para(doc, "Tiempo para preparar la entrega: normalmente 5 a 10 minutos después de terminar el texto.", italic=True, color=MUTED, size=10)
+    add_numbered(doc, "Crea una carpeta.", "Ponle un nombre corto relacionado con tu articulo.", process_num)
+    add_numbered(doc, "Copia la plantilla.", "Guardala como articulo.txt o articulo.md dentro de la carpeta.", process_num)
+    add_numbered(doc, "Escribe sin borrar las etiquetas.",
+        "Completa TITULO, AUTOR, CATEGORIA, SUBTITULO y TIEMPO DE LECTURA.", process_num)
+    add_numbered(doc, "Agrega tus imagenes.",
+        "Guarda los archivos originales en la misma carpeta y escribe su nombre exacto en RUTA.", process_num)
+    add_numbered(doc, "Comprime y envia.",
+        "Convierte la carpeta en un archivo .zip y mandalo al responsable editorial.", process_num)
 
-    # Page 2: folder and exact copyable template.
+    add_heading(doc, "Que hara el editor", 2)
+    add_bullet(doc, "Revisara el texto y abrira una vista previa antes de publicar.")
+    add_bullet(doc, "Subira las imagenes y conservara los pies de foto que escribiste.")
+    add_bullet(doc, "Te avisara si falta un dato o si una imagen necesita mayor resolucion.")
+    add_para(doc,
+        "Tiempo para preparar la entrega: normalmente 5 a 10 minutos "
+        "despues de terminar el texto.",
+        italic=True, color=MUTED, size=10)
+
+    # ===== PAGINA 2 - CARPETA Y PLANTILLA =====
     add_page_break(doc)
+
     add_heading(doc, "1. Prepara una sola carpeta", 1)
-    add_para(doc, "La carpeta evita que se pierdan imágenes, nombres o leyendas. Todo lo necesario para publicar debe quedar dentro.")
-    add_code(doc, "mi-articulo-cansat/\n  articulo.txt\n  foto-del-evento.webp\n  equipo-en-lanzamiento.jpg", "EJEMPLO DE CARPETA")
-    add_callout(doc, "Regla de nombres", "Usa letras, números y guiones. Evita nombres como IMG_0042 final FINAL.jpg. Prefiere foto-del-evento.jpg.")
+    add_para(doc,
+        "La carpeta evita que se pierdan imagenes, nombres o leyendas. "
+        "Todo lo necesario para publicar debe quedar dentro.")
+    add_code(doc,
+        "mi-articulo-cansat/" + "\n"
+        + "  articulo.md" + "\n"
+        + "  foto-del-evento.webp" + "\n"
+        + "  equipo-en-lanzamiento.jpg",
+        "EJEMPLO DE CARPETA")
+    add_callout(doc, "Regla de nombres",
+        "Solo caracteres seguros: letras sin acento, numeros y guiones. "
+        "Nada de espacios, enies, signos de puntuacion ni caracteres "
+        "especiales.")
+    add_bullet(doc, "Un solo archivo de texto por articulo (articulo.md o articulo.txt).")
+    add_bullet(doc, "Imagenes en JPG, PNG o WebP. Hasta 10 MB cada una.")
+    add_bullet(doc, "Todos los archivos dentro de la misma carpeta, sin subcarpetas complejas.")
+    add_bullet(doc,
+        "Nombres de archivo: solo a-z, 0-9 y guiones. Nada de espacios, acentos, enies, "
+        "signos de puntuacion ni caracteres especiales. "
+        "Ejemplo bueno: equipo-lanzamiento.jpg. "
+        "Ejemplo malo: IMG_0042 final FINAL.jpg (tiene espacios).",
+        bold_lead="Nombres de archivo: ")
+    add_bullet(doc,
+        "El nombre en RUTA debe coincidir exactamente con el archivo dentro "
+        "de la carpeta, incluyendo la extension.",
+        bold_lead="RUTA exacta: ")
+
     add_heading(doc, "2. Copia esta plantilla", 1)
-    template = """TÍTULO:
-AUTOR:
-CATEGORÍA:
-BAJADA:
-EDICIÓN:
+    add_para(doc,
+        "Completa los campos de la parte superior y escribe el cuerpo debajo "
+        "del separador ---. No borres ni modifiques los nombres de los campos.")
 
----
+    template_lines = [
+        "TITULO: La primera mision de nuestro equipo CanSat",
+        "AUTOR: Andrea Perez Lopez",
+        "CATEGORIA: Ingenieria",
+        "SUBTITULO: Disenar un satelite del tamano de una lata nos enseno a",
+        "  convertir limites reales en decisiones de ingenieria.",
+        "EDICION: julio-2026",
+        "TIEMPO DE LECTURA: 8",
+        "",
+        "---",
+        "",
+        "## Primer subtitulo",
+        "",
+        "Escribe aqui tu primer parrafo. Deja una linea vacia entre parrafos.",
+        "",
+        "> Una cita breve que quieras destacar.",
+        "",
+        "## Segundo subtitulo",
+        "",
+        "Continua aqui el articulo.",
+        "",
+        "[IMAGEN 1]",
+        "RUTA: foto-del-evento.webp",
+        "PIE DE FOTO: Explica que aparece, donde ocurre, quien participa y quien",
+        "  tomo la foto.",
+        "",
+        "## Conclusion",
+        "",
+        "Cierra con la idea que quieres dejar en tus lectores.",
+    ]
+    add_code(doc, "\n".join(template_lines), "PLANTILLA COMPLETA -- COPIA ESTE BLOQUE")
 
-## Primer subtítulo
+    add_callout(doc, "Importante",
+        "Usa SUBTITULO, no BAJADA. "
+        "TIEMPO DE LECTURA debe ser un numero entero entre 1 y 90 minutos. "
+        "El editor podra ajustarlo.",
+        tone="red")
 
-Escribe aquí tu primer párrafo.
-
-> Una cita breve que quieras destacar.
-
-## Segundo subtítulo
-
-Continúa aquí el artículo.
-
-[IMAGEN 1]
-RUTA: nombre-exacto-de-la-imagen.jpg
-PIE DE FOTO: Explica qué aparece, dónde y quién tomó la foto.
-
-## Conclusión
-
-Cierra con la idea que quieres dejar en tus lectores."""
-    add_code(doc, template)
-    add_para(doc, "Guarda el archivo como articulo.txt o articulo.md. No hace falta cambiar tipografías, colores ni márgenes.", italic=True, color=MUTED, size=10)
-
-    # Page 3: writing syntax and images.
+    # ===== PAGINA 3 - SINTAXIS =====
     add_page_break(doc)
-    add_heading(doc, "3. Escribe el artículo", 1)
-    add_heading(doc, "Datos de la parte superior", 2)
-    add_bullet(doc, "TÍTULO: obligatorio. Usa el título que quieres que vea el lector.", "TÍTULO:")
-    add_bullet(doc, "AUTOR: obligatorio. Escribe tu nombre completo.", "AUTOR:")
-    add_bullet(doc, "CATEGORÍA: obligatoria. Ejemplos: Ingeniería, Entrevista, Aeroespacial, Investigación o Comunidad.", "CATEGORÍA:")
-    add_bullet(doc, "BAJADA: una o dos frases que resumen la historia y despiertan interés.", "BAJADA:")
-    add_bullet(doc, "EDICIÓN: opcional. Déjala vacía si el editor no te indicó una edición.", "EDICIÓN:")
-    add_callout(doc, "No borres esta línea", "El separador --- debe ir solo en una línea entre los datos y el cuerpo del artículo.", tone="red")
-    add_heading(doc, "Señales sencillas dentro del texto", 2)
-    add_code(doc, "## Un subtítulo\n\n> Una cita destacada")
-    add_bullet(doc, "Dos signos ## convierten esa línea en subtítulo.")
+
+    add_heading(doc, "3. Escribe el articulo", 1)
+
+    add_heading(doc, "Campos obligatorios y opcionales", 2)
+    r = "\n\n"
+    add_bullet(doc, "TITULO: obligatorio. El titulo que veran los lectores.",
+        bold_lead="TITULO: ")
+    add_bullet(doc, "AUTOR: obligatorio. Tu nombre completo.",
+        bold_lead="AUTOR: ")
+    add_bullet(doc,
+        "CATEGORIA: obligatoria. Ejemplos: Ingenieria, Entrevista, "
+        "Aeroespacial, Investigacion o Comunidad.",
+        bold_lead="CATEGORIA: ")
+    add_bullet(doc,
+        "SUBTITULO: una o dos frases que resumen la historia "
+        "y despiertan interes. Tambien se acepta BAJADA si prefieres "
+        "ese nombre.",
+        bold_lead="SUBTITULO: ")
+    add_bullet(doc,
+        "EDICION: opcional. Dejala vacia si el editor no te indico "
+        "una edicion.",
+        bold_lead="EDICION: ")
+    add_bullet(doc,
+        "TIEMPO DE LECTURA: opcional. Un numero entero que indica "
+        "los minutos estimados. Si no lo pones, el editor lo calculara.",
+        bold_lead="TIEMPO DE LECTURA: ")
+
+    add_callout(doc, "Estimar el tiempo de lectura",
+        "Cuenta las palabras de tu articulo y divide entre 200. "
+        "Ejemplo: 1,600 palabras / 200 = 8 minutos. "
+        "Redondea al entero mas cercano. "
+        "Escribe solo el numero, sin minutos ni comas.")
+
+    add_heading(doc, "El separador ---", 2)
+    add_para(doc,
+        "La linea --- debe ir sola, en su propia linea, entre los metadatos "
+        "y el cuerpo del articulo. Si la borras, el sistema no podra procesar "
+        "el archivo.")
+    add_code(doc, "TIEMPO DE LECTURA: 8" + "\n" + "\n" + "---" + "\n" + "\n" + "## Aqui empieza el cuerpo")
+
+    add_heading(doc, "Senales dentro del texto", 2)
+    add_code(doc, "## Un subtitulo" + "\n" + "\n" + "> Una cita destacada")
+    add_bullet(doc, "Dos signos ## convierten esa linea en subtitulo.")
     add_bullet(doc, "El signo > al inicio convierte la frase en una cita destacada.")
-    add_bullet(doc, "Deja una línea vacía entre párrafos para que el texto sea fácil de revisar.")
-    add_heading(doc, "Imágenes y pies de foto", 1)
-    add_para(doc, "Coloca el bloque exactamente en el lugar donde quieres que aparezca la imagen. Cada dato ocupa una sola línea.")
-    add_code(doc, "[IMAGEN 1]\nRUTA: foto-del-evento.webp\nPIE DE FOTO: El equipo prepara el CanSat antes del lanzamiento. Foto: Ana López.")
+    add_bullet(doc,
+        "Deja una linea vacia entre parrafos para que el texto sea facil de revisar.")
+
+    add_heading(doc, "Imagenes y pies de foto", 2)
+    add_para(doc,
+        "Coloca el bloque exactamente en el lugar donde quieres que aparezca "
+        "la imagen. Cada linea tiene un proposito especifico.")
+    add_code(doc,
+        "[IMAGEN 1]" + "\n"
+        + "RUTA: foto-del-evento.webp" + "\n"
+        + "PIE DE FOTO: El equipo prepara el CanSat antes del lanzamiento. Foto: Ana Lopez.")
     add_bullet(doc, "Numera en orden: [IMAGEN 1], [IMAGEN 2], [IMAGEN 3]...")
-    add_bullet(doc, "RUTA debe coincidir exactamente con el archivo dentro de la carpeta.")
-    add_bullet(doc, "El pie debe explicar qué ocurre, identificar personas relevantes y dar crédito cuando corresponda.")
-    add_bullet(doc, "Envía JPG, PNG o WebP en la mayor resolución disponible. No pegues capturas dentro del documento.")
+    add_bullet(doc,
+        "RUTA debe coincidir exactamente con el nombre del archivo "
+        "dentro de la carpeta, incluyendo la extension.")
+    add_bullet(doc,
+        "El pie debe explicar que ocurre, identificar personas relevantes "
+        "y dar credito al autor de la foto.")
+    add_bullet(doc,
+        "Envia JPG, PNG o WebP en la mayor resolucion disponible. "
+        "No pegues capturas dentro del documento de texto.")
 
-    # Page 4: complete example.
+    # ===== PAGINA 4 - EJEMPLO COMPLETO =====
     add_page_break(doc)
+
     add_heading(doc, "4. Ejemplo completo", 1)
-    add_para(doc, "Este ejemplo puede pasar directamente por la vista previa del editor.")
-    example = """TÍTULO: La primera misión de nuestro equipo CanSat
-AUTOR: Andrea Pérez López
-CATEGORÍA: Ingeniería
-BAJADA: Diseñar un satélite del tamaño de una lata nos enseñó a convertir límites reales en decisiones de ingeniería.
-EDICIÓN: julio-2026
+    add_para(doc,
+        "Este archivo listo para publicar puede copiarse y adaptarse "
+        "para una entrega real.")
 
----
+    example_lines = [
+        "TITULO: La primera mision de nuestro equipo CanSat",
+        "AUTOR: Andrea Perez Lopez",
+        "CATEGORIA: Ingenieria",
+        "SUBTITULO: Disenar un satelite del tamano de una lata nos enseno",
+        "  a convertir limites reales en decisiones de ingenieria.",
+        "EDICION: julio-2026",
+        "TIEMPO DE LECTURA: 8",
+        "",
+        "---",
+        "",
+        "## Una mision pequena con preguntas grandes",
+        "",
+        "Nuestro equipo comenzo con una pregunta sencilla: cuantos sistemas",
+        "podiamos integrar dentro del volumen de una lata sin perder",
+        "confiabilidad?",
+        "",
+        "Durante tres meses disenamos la alimentacion, la telemetria y el",
+        "sistema de recuperacion. Cada prueba dejo datos y una lista clara",
+        "de cambios.",
+        "",
+        "> El prototipo mejoro cuando dejamos de ocultar los errores y",
+        "empezamos a documentarlos. -- Andrea Perez, responsable de",
+        "telemetria.",
+        "",
+        "## El dia del lanzamiento",
+        "",
+        "La manana del lanzamiento revisamos conexiones, bateria y recepcion",
+        "de datos. El descenso fue estable y recuperamos el CanSat sin danos.",
+        "",
+        "[IMAGEN 1]",
+        "RUTA: equipo-en-lanzamiento.jpg",
+        "PIE DE FOTO: El equipo verifica la telemetria minutos antes del",
+        "  lanzamiento. Foto: Andrea Perez.",
+        "",
+        "## Lo que sigue",
+        "",
+        "La siguiente version incorporara un sensor ambiental y una carcasa",
+        "mas ligera. Tambien publicaremos el registro de pruebas para que",
+        "otros equipos puedan aprender del proceso.",
+    ]
+    add_code(doc, "\n".join(example_lines), "ARCHIVO COMPLETO: articulo.md")
 
-## Una misión pequeña con preguntas grandes
+    add_callout(doc, "La idea",
+        "El texto conserva tu voz. Los encabezados, citas y bloques de imagen "
+        "solo le indican al editor como convertirlo en una historia legible "
+        "en el sitio.")
 
-Nuestro equipo comenzó con una pregunta sencilla: ¿cuántos sistemas podíamos integrar dentro del volumen de una lata sin perder confiabilidad?
-
-Durante tres meses diseñamos la alimentación, la telemetría y el sistema de recuperación. Cada prueba dejó datos y una lista clara de cambios.
-
-> El prototipo mejoró cuando dejamos de ocultar los errores y empezamos a documentarlos.
-
-## El día del lanzamiento
-
-La mañana del lanzamiento revisamos conexiones, batería y recepción de datos. El descenso fue estable y recuperamos el CanSat sin daños.
-
-[IMAGEN 1]
-RUTA: equipo-en-lanzamiento.jpg
-PIE DE FOTO: El equipo verifica la telemetría minutos antes del lanzamiento. Foto: Andrea Pérez.
-
-## Lo que sigue
-
-La siguiente versión incorporará un sensor ambiental y una carcasa más ligera. También publicaremos el registro de pruebas para que otros equipos puedan aprender del proceso."""
-    add_code(doc, example)
-
-    # Page 5: final checks and handoff.
+    # ===== PAGINA 5 - CHECKLIST Y ENTREGA =====
     add_page_break(doc)
+
     add_heading(doc, "5. Revisa antes de enviar", 1)
+    add_para(doc,
+        "Esta lista de verificacion te toma dos minutos y evita la mayoria "
+        "de las correcciones posteriores.")
+
     checklist = [
-        "El archivo incluye TÍTULO, AUTOR y CATEGORÍA.",
-        "La línea --- aparece entre los datos y el artículo.",
-        "Los subtítulos comienzan con ##.",
-        "Cada imagen está dentro de la carpeta y tiene un bloque numerado.",
+        "El archivo incluye TITULO, AUTOR y CATEGORIA.",
+        "El SUBTITULO esta presente (una o dos frases).",
+        "TIEMPO DE LECTURA contiene un numero entero de minutos (opcional).",
+        "La linea --- aparece sola entre los metadatos y el cuerpo.",
+        "Los subtitulos comienzan con ##.",
+        "Las citas comienzan con > e incluyen atribucion cuando corresponde.",
+        "Cada imagen esta dentro de la carpeta y tiene un bloque [IMAGEN N].",
         "Cada RUTA coincide letra por letra con el nombre del archivo.",
-        "Cada imagen tiene PIE DE FOTO y crédito cuando corresponde.",
-        "Revisaste ortografía, nombres propios, cifras y enlaces.",
-        "La carpeta abre correctamente después de comprimirla como .zip.",
+        "Cada imagen tiene PIE DE FOTO y credito del autor.",
+        "Revisaste ortografia, nombres propios, cifras y fuentes.",
+        "La carpeta abre correctamente despues de comprimirla como .zip.",
     ]
     for item in checklist:
         add_bullet(doc, item)
-    add_heading(doc, "Cómo enviar la carpeta", 1)
-    send_num = new_numbering_instance(doc)
-    add_numbered(doc, "Comprímela.", "En Windows: clic derecho sobre la carpeta > Comprimir en archivo ZIP. En macOS: clic derecho > Comprimir.", send_num)
-    add_numbered(doc, "Nombra el ZIP.", "Usa tu apellido y un título corto, por ejemplo: perez-mision-cansat.zip.", send_num)
-    add_numbered(doc, "Envíalo.", "Adjunta el ZIP por el medio acordado con el responsable editorial y escribe tu nombre y título en el mensaje.", send_num)
-    add_callout(doc, "Si el archivo pesa demasiado", "Comparte una carpeta de Drive con permiso de lectura y no muevas ni renombres archivos después de enviar el enlace.")
-    add_heading(doc, "Lo que no necesitas hacer", 2)
-    add_bullet(doc, "No necesitas diseñar la página ni acomodar tamaños para web.")
-    add_bullet(doc, "No necesitas subir nada al sitio ni tener acceso al panel administrativo.")
-    add_bullet(doc, "No necesitas convertir las imágenes: envía los originales y el editor resolverá la publicación.")
-    add_para(doc, "¿Tienes dudas? Pregunta antes de cambiar la plantilla. Una pregunta breve suele ahorrar una ronda de correcciones.", bold_lead="¿Tienes dudas?", color=NAVY, after=0)
 
+    add_heading(doc, "Como enviar la carpeta", 1)
+    send_num = new_numbering_instance(doc)
+    add_numbered(doc, "Comprimela.",
+        "En Windows: clic derecho sobre la carpeta > Enviar a > "
+        "Carpeta comprimida (en ZIP). En macOS: clic derecho > Comprimir.",
+        send_num)
+    add_numbered(doc, "Nombra el ZIP.",
+        "Usa tu apellido y un titulo corto, "
+        "por ejemplo: perez-mision-cansat.zip.",
+        send_num)
+    add_numbered(doc, "Enviolo.",
+        "Adjunta el ZIP por el medio acordado con el responsable editorial "
+        "e incluye tu nombre y el titulo del articulo en el mensaje.",
+        send_num)
+
+    add_callout(doc, "Si el archivo pesa demasiado",
+        "Comparte una carpeta de Drive o similar con permiso de lectura. "
+        "No muevas ni renombres archivos despues de enviar el enlace.",
+        tone="red")
+
+    add_heading(doc, "Lo que no necesitas hacer", 2)
+    add_bullet(doc,
+        "No necesitas disenar la pagina ni acomodar tamanos para web.")
+    add_bullet(doc,
+        "No necesitas subir nada al sitio ni tener acceso al panel administrativo.")
+    add_bullet(doc,
+        "No necesitas convertir las imagenes: envia los originales "
+        "y el editor resolvera la publicacion.")
+
+    add_para(doc,
+        "Tienes dudas? Pregunta antes de cambiar las etiquetas de la plantilla. "
+        "Una pregunta breve suele ahorrar una ronda completa de correcciones.",
+        bold_lead="Tienes dudas?",
+        color=NAVY, after=0)
+
+    # ===== GUARDAR =====
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     doc.save(OUTPUT)
     print(OUTPUT)

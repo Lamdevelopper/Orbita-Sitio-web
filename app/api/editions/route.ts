@@ -4,7 +4,7 @@ import { editions } from "../../../db/schema";
 import { cleanText, isEditor, routeError, validSlug } from "../../../lib/api";
 
 export async function GET() {
-  try { return Response.json({ editions: await getDb().select().from(editions).orderBy(desc(editions.publishedAt)) }); }
+  try { return Response.json({ editions: await getDb().select().from(editions).orderBy(desc(editions.isCurrent), desc(editions.number)) }); }
   catch (error) { return routeError(error); }
 }
 

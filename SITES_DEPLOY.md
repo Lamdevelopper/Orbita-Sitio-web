@@ -181,3 +181,85 @@ configuración de producción.
 - Las migraciones están incluidas y la edición actual está definida en el CMS.
 - No hay excepciones nuevas en logs después de las pruebas de humo.
 - Existe una versión anterior conocida y se probó el procedimiento de rollback.
+
+## Newsletter: arquitectura y despliegue
+
+Newsletter tiene tres unidades independientes. Sites sirve el sitio y `/admin`;
+D1 conserva consentimiento, campañas y entregas; el Worker programado procesa
+hasta 50 entregas por minuto. El fork de EmailFlare solo entrega correo y no es
+la base de suscriptores. No habilitar las tres piezas en un mismo paso.
+
+### Secretos y variables
+
+Configurar en Sites y, cuando aplique, en el Worker programado:
+
+- `NEWSLETTER_ENABLED=false` durante migración y pruebas.
+- `NEWSLETTER_ENCRYPTION_KEY`: clave AES actual, base64 de 32 bytes.
+- `NEWSLETTER_ENCRYPTION_KEYS`: mapa JSON opcional por versión para rotación.
+- `NEWSLETTER_KEY_VERSION`: versión entera para cifrar nuevas filas.
+- `NEWSLETTER_INDEX_KEY`: HMAC base64 de 32 bytes, distinto de AES.
+- `NEWSLETTER_TOKEN_KEY`: secreto exclusivo del sender para tokens de baja.
+- `NEWSLETTER_FROM_EMAIL`, inicialmente `newsletter@orbitadivulgacion.com`.
+- `NEWSLETTER_FROM_NAME` y `NEWSLETTER_REPLY_TO`.
+- `NEWSLETTER_FROM_VERIFIED=true` solo después de validar el dominio.
+- `EMAILFLARE_BASE_URL` y `EMAILFLARE_API_KEY` limitada al dominio.
+- `NEWSLETTER_PUBLIC_BASE_URL=https://orbitadivulgacion.com` en el sender.
+
+Generar cada clave de 32 bytes con un CSPRNG. No reutilizar material entre AES,
+blind index, tokens o `RECIPIENT_HASH_KEY` de EmailFlare.
+
+### Migración D1 en dos fases
+
+1. Confirmar `NEWSLETTER_ENABLED=false` en Sites y sender.
+2. Hacer backup de D1 y aplicar `drizzle/0004_secure_newsletter.sql`. Esta fase
+   conserva plaintext únicamente en `subscribers_legacy_0004`.
+3. Configurar localmente `NEWSLETTER_D1_DATABASE`, claves y versión. Ejecutar
+   `npm run newsletter:migrate` para preflight y luego
+   `npm run newsletter:migrate -- --apply`.
+4. Exigir el mensaje `0 campos faltantes` y verificar conteo legacy/nuevo,
+   `COUNT(DISTINCT email_blind_index)` y estado `needs_reconfirmation`.
+5. Mantener la tabla legacy durante la ventana de observación. Esos contactos
+   no participan en campañas hasta confirmar de nuevo.
+6. Solo con reconciliación y backup comprobados, aplicar
+   `drizzle/0005_drop_legacy_subscribers.sql`.
+
+### EmailFlare y sender
+
+1. Clonar EmailFlare en repositorio separado al commit fijado en
+   `integrations/emailflare/README.md` y validar `recipient-privacy.patch` con
+   `git apply --check` antes de aplicarlo.
+2. Ejecutar migraciones y typecheck del fork. Configurar `RECIPIENT_HASH_KEY`,
+   desactivar el panel público y crear primero una key de prueba de dominio.
+3. Probar que `/v1/send` devuelve máscara, no destinatario, y que los logs D1
+   no contienen `to_address`.
+4. Copiar `wrangler.newsletter-sender.example.jsonc` fuera del control de
+   versiones, completar el ID de D1 compartido y desplegar el Worker cron.
+5. Dejar su flag en `false` hasta terminar SPF, DKIM y DMARC. Luego enviar una
+   prueba a cada editor, habilitar un piloto pequeño y revisar rebotes/errores.
+
+### Pruebas de humo de Newsletter
+
+Ejecutar `npm run test:newsletter`, lint y build. Con envío todavía pausado:
+
+- alta nueva y duplicada devuelven el mismo cuerpo genérico;
+- honeypot y cuarta solicitud en 15 minutos no crean actividad útil;
+- confirmación activa una sola fila y la baja GET/POST es idempotente;
+- `/admin` solo muestra `emailMasked` y buscar no pone el correo en la URL;
+- editar después de probar vuelve a bloquear Enviar;
+- preview HTML/texto siempre contiene domicilio, privacidad, contacto, vista web
+  y baja;
+- un envío repetido con la misma Idempotency-Key no duplica entregas;
+- simular 401/403 sin retry y 429/502/timeout con backoff hasta cinco intentos.
+
+### Pausa, rollback y rotación
+
+Para detener envíos, poner `NEWSLETTER_ENABLED=false` en Sites y sender y
+revocar la key de EmailFlare. No borrar campañas, consentimientos ni entregas:
+quedan disponibles para diagnóstico o reanudación idempotente. El rollback de
+Sites no revierte D1.
+
+Para rotar AES o blind index, pausar ambos runtimes, conservar claves AES
+anteriores en `NEWSLETTER_ENCRYPTION_KEYS`, subir `NEWSLETTER_KEY_VERSION` y
+ejecutar primero `npm run newsletter:migrate -- --rotate` y después con
+`--rotate --apply`. Verificar versión e índices únicos, actualizar los secretos
+de runtime, probar descifrado/envío y solo entonces retirar la clave AES vieja.

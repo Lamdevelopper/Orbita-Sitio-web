@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "orbita-newsletter-sender",
+  "main": "worker/newsletter-sender.ts",
+  "compatibility_date": "2026-07-25",
+  "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "orbita-production", "database_id": "REPLACE_WITH_D1_DATABASE_ID" }
+  ],
+  "vars": {
+    "NEWSLETTER_ENABLED": "false",
+    "NEWSLETTER_PUBLIC_BASE_URL": "https://orbitadivulgacion.com",
+    "NEWSLETTER_FROM_EMAIL": "newsletter@orbitadivulgacion.com",
+    "NEWSLETTER_FROM_NAME": "Orbita"
+  }
+}

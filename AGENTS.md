@@ -1,6 +1,6 @@
 # Editorial CMS
 
-The admin route (/admin) has operational tabs for articles, authors, and editions.
+The admin route (/admin) has operational tabs for articles, authors, editions, and Newsletter.
 
 ## Structure
 
@@ -9,6 +9,8 @@ The admin route (/admin) has operational tabs for articles, authors, and edition
   - Authors tab: form + registered authors list with avatar, bio, and CRUD
   - Editions tab: form + archive of CMS-managed editions with date, number, summary, links, PDF, and cover
   - Visual displaced-hero indicator via displacedSlugs state and .admin-displaced CSS class
+  - Newsletter delegates to `components/AdminNewsletter.tsx`; it never receives
+    subscriber email plaintext.
 
 - **lib/editorial.ts** - Owns article placement logic (placeArticle):
   - Ensures exactly one hero article at a time (displaces previous hero to feed)
@@ -59,3 +61,6 @@ To regenerate: run the fpdf2 script in public/docs/gen_guide.py.
   SVG and client-declared arbitrary MIME types are rejected.
 - Follow `SITES_DEPLOY.md` for build, publish, smoke-test, log, and rollback
   procedures. Never deploy an archive that was built from a different commit.
+- Newsletter remains fail-closed until both the D1 setting and
+  `NEWSLETTER_ENABLED=true` are present. Email delivery runs in the separate
+  scheduled Worker documented in `SITES_DEPLOY.md`.

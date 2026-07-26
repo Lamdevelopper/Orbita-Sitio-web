@@ -1,0 +1,317 @@
+diff --git a/services/admin/src/pages/Dashboard.tsx b/services/admin/src/pages/Dashboard.tsx
+index ed09c70..29d13a9 100644
+--- a/services/admin/src/pages/Dashboard.tsx
++++ b/services/admin/src/pages/Dashboard.tsx
+@@ -52,7 +52,7 @@ interface CFTokenStatus {
+ 
+ interface LogRow {
+   id: string;
+-  to_address: string;
++  to_masked: string;
+   from_address: string;
+   subject: string;
+   status: 'sent' | 'failed';
+@@ -559,7 +559,7 @@ export default function Dashboard() {
+                     <p className="text-[13px] text-foreground truncate leading-tight">
+                       {log.subject || '(no subject)'}
+                     </p>
+-                    <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">{log.to_address}</p>
++                    <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">{log.to_masked}</p>
+                     {log.error && (
+                       <p className="text-[11px] text-destructive/80 truncate mt-0.5">{log.error}</p>
+                     )}
+diff --git a/services/admin/src/pages/Logs.tsx b/services/admin/src/pages/Logs.tsx
+index 8001882..d6754f3 100644
+--- a/services/admin/src/pages/Logs.tsx
++++ b/services/admin/src/pages/Logs.tsx
+@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
+ 
+ interface LogRow {
+   id: string;
+-  to_address: string;
++  to_masked: string;
+   from_address: string;
+   subject: string;
+   status: 'sent' | 'failed';
+@@ -83,7 +83,7 @@ function DetailPanel({ log }: { log: LogRow }) {
+               <div className="px-5 py-4 border-b border-border flex flex-col gap-2.5">
+                 {[
+                   { label: 'From', value: log.from_address },
+-                  { label: 'To', value: log.to_address },
++                  { label: 'To', value: log.to_masked },
+                   { label: 'Subject', value: log.subject || '—' },
+                   { label: 'Date', value: sentAt.toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+                 ].map(({ label, value }) => (
+@@ -299,7 +299,7 @@ export default function LogsPage() {
+                           <Badge className="text-[9px] px-1 py-0 h-4 bg-amber-500/10 text-amber-600 border-amber-200 flex-shrink-0">test</Badge>
+                         )}
+                       </div>
+-                      <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">{log.to_address}</p>
++                      <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">{log.to_masked}</p>
+                       {log.error && (
+                         <p className="text-[11px] text-destructive/70 truncate mt-0.5">{log.error}</p>
+                       )}
+diff --git a/services/admin/src/pages/TestMailbox.tsx b/services/admin/src/pages/TestMailbox.tsx
+index c54302e..e2219e8 100644
+--- a/services/admin/src/pages/TestMailbox.tsx
++++ b/services/admin/src/pages/TestMailbox.tsx
+@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
+ 
+ interface TestEmailRow {
+   id: string;
+-  to_address: string;
++  to_masked: string;
+   from_address: string;
+   subject: string;
+   status: 'sent' | 'failed';
+@@ -277,7 +277,7 @@ export default function TestMailboxPage() {
+                         </p>
+                         <Badge className="text-[9px] px-1 py-0 h-4 bg-amber-500/10 text-amber-600 border-amber-200 flex-shrink-0">test</Badge>
+                       </div>
+-                      <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">{log.to_address}</p>
++                      <p className="text-[11px] text-muted-foreground font-mono truncate mt-0.5">{log.to_masked}</p>
+                       {log.error && (
+                         <p className="text-[11px] text-destructive/70 truncate mt-0.5">{log.error}</p>
+                       )}
+diff --git a/services/worker/migrations/0004_recipient_privacy.sql b/services/worker/migrations/0004_recipient_privacy.sql
+new file mode 100644
+index 0000000..cce140c
+--- /dev/null
++++ b/services/worker/migrations/0004_recipient_privacy.sql
+@@ -0,0 +1,41 @@
++-- Recipient addresses are transient delivery inputs. Persist only a mask and
++-- keyed digest so the EmailFlare control plane cannot reveal subscribers.
++CREATE TABLE email_logs_private (
++  id               TEXT PRIMARY KEY,
++  to_masked        TEXT NOT NULL,
++  to_hash          TEXT NOT NULL,
++  from_address     TEXT NOT NULL,
++  subject          TEXT NOT NULL,
++  status           TEXT NOT NULL DEFAULT 'pending',
++  cf_message_id    TEXT,
++  domain_id        TEXT,
++  template_id      TEXT,
++  api_key_id       TEXT,
++  idempotency_key  TEXT,
++  error            TEXT,
++  is_test          INTEGER NOT NULL DEFAULT 0,
++  html_body        TEXT,
++  text_body        TEXT,
++  sent_at          TEXT NOT NULL
++);
++
++INSERT INTO email_logs_private (
++  id, to_masked, to_hash, from_address, subject, status, cf_message_id,
++  domain_id, template_id, api_key_id, idempotency_key, error, is_test,
++  html_body, text_body, sent_at
++)
++SELECT
++  id, '[legacy redacted]', 'legacy:' || id, from_address, subject, status,
++  cf_message_id, domain_id, template_id, api_key_id, idempotency_key, error,
++  is_test, html_body, text_body, sent_at
++FROM email_logs;
++
++DROP TABLE email_logs;
++ALTER TABLE email_logs_private RENAME TO email_logs;
++CREATE INDEX idx_logs_sent_at ON email_logs(sent_at);
++CREATE INDEX idx_logs_status ON email_logs(status);
++CREATE INDEX idx_logs_api_key ON email_logs(api_key_id);
++CREATE INDEX idx_logs_domain ON email_logs(domain_id);
++CREATE INDEX idx_logs_recipient_hash ON email_logs(to_hash);
++CREATE UNIQUE INDEX idx_logs_idempotency ON email_logs(idempotency_key)
++  WHERE idempotency_key IS NOT NULL;
+diff --git a/services/worker/src/db.ts b/services/worker/src/db.ts
+index e978d3b..5de3118 100644
+--- a/services/worker/src/db.ts
++++ b/services/worker/src/db.ts
+@@ -54,7 +54,8 @@ export interface ApiKeyDomainRow {
+ export interface EmailLogRow {
+   [key: string]: unknown;
+   id: string;
+-  to_address: string;
++  to_masked: string;
++  to_hash: string;
+   from_address: string;
+   subject: string;
+   status: 'pending' | 'sent' | 'failed';
+diff --git a/services/worker/src/env.ts b/services/worker/src/env.ts
+index 9bb3545..bd60582 100644
+--- a/services/worker/src/env.ts
++++ b/services/worker/src/env.ts
+@@ -16,6 +16,7 @@ export interface Env {
+   SESSION_SECRET: string;
+   CF_API_TOKEN: string;
+   CF_ACCOUNT_ID: string;
++  RECIPIENT_HASH_KEY: string;
+ 
+   // ── CORS — comma-separated bare domains, e.g. "admin.example.com" ───────────
+   ADMIN_ORIGIN: string;
+diff --git a/services/worker/src/routes/logs.ts b/services/worker/src/routes/logs.ts
+index 9e656e7..5c62ca1 100644
+--- a/services/worker/src/routes/logs.ts
++++ b/services/worker/src/routes/logs.ts
+@@ -27,9 +27,9 @@ app.get('/', async (c) => {
+   if (fromDate)   { conditions.push('sent_at >= ?');    params.push(fromDate); }
+   if (toDate)     { conditions.push('sent_at <= ?');    params.push(toDate); }
+   if (search) {
+-    conditions.push('(to_address LIKE ? OR from_address LIKE ? OR subject LIKE ?)');
++    conditions.push('(to_masked LIKE ? OR to_hash = ? OR from_address LIKE ? OR subject LIKE ?)');
+     const like = `%${search}%`;
+-    params.push(like, like, like);
++    params.push(like, search, like, like);
+   }
+ 
+   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+diff --git a/services/worker/src/routes/send.ts b/services/worker/src/routes/send.ts
+index ab53082..7489ec9 100644
+--- a/services/worker/src/routes/send.ts
++++ b/services/worker/src/routes/send.ts
+@@ -24,6 +24,9 @@ const sendSchema = z.object({
+   fromName: z.string().optional(),
+   to: z.union([z.string().email(), z.array(z.string().email()).max(50)]),
+   replyTo: z.string().email().optional(),
++  unsubscribeUrl: z.string().url().refine(value => value.startsWith('https://'), {
++    message: 'unsubscribeUrl must use HTTPS',
++  }).optional(),
+   subject: z.string().min(1).optional(),
+   html: z.string().optional(),
+   text: z.string().optional(),
+@@ -39,6 +42,24 @@ function applyVariables(template: string, vars: Record<string, string>): string
+   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`);
+ }
+ 
++function maskRecipient(value: string): string {
++  const [local, domain] = value.toLowerCase().split('@');
++  if (!local || !domain) return '***';
++  return `${local.slice(0, 1)}${'*'.repeat(Math.max(3, local.length - 1))}@${domain}`;
++}
++
++async function hashRecipient(value: string, secret: string): Promise<string> {
++  const key = await crypto.subtle.importKey(
++    'raw',
++    new TextEncoder().encode(secret),
++    { name: 'HMAC', hash: 'SHA-256' },
++    false,
++    ['sign'],
++  );
++  const digest = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value.toLowerCase()));
++  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
++}
++
+ // POST /v1/send
+ app.post('/', zValidator('json', sendSchema), async (c) => {
+   const body   = c.req.valid('json');
+@@ -55,7 +76,7 @@ app.post('/', zValidator('json', sendSchema), async (c) => {
+     if (existing) {
+       return c.json({
+         cached: true,
+-        results: [{ to: existing.to_address, cfId: existing.cf_message_id ?? undefined }],
++        results: [{ recipient: existing.to_masked, cfId: existing.cf_message_id ?? undefined }],
+       });
+     }
+   }
+@@ -107,10 +128,12 @@ app.post('/', zValidator('json', sendSchema), async (c) => {
+ 
+   const now    = new Date().toISOString();
+   const toList = [...new Set(Array.isArray(body.to) ? body.to : [body.to])];
+-  const results: Array<{ to: string; cfId?: string; error?: string }> = [];
++  const results: Array<{ recipient: string; cfId?: string; error?: string }> = [];
+   let successCount = 0;
+ 
+   for (const recipient of toList) {
++    const toMasked = maskRecipient(recipient);
++    const toHash = await hashRecipient(recipient, c.env.RECIPIENT_HASH_KEY);
+     try {
+       const cfResult = await sendEmail(
+         {
+@@ -120,6 +143,10 @@ app.post('/', zValidator('json', sendSchema), async (c) => {
+           html,
+           text,
+           replyTo: body.replyTo,
++          headers: body.unsubscribeUrl ? {
++            'List-Unsubscribe': `<${body.unsubscribeUrl}>`,
++            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
++          } : undefined,
+         },
+         c.env.CF_API_TOKEN,
+         c.env.CF_ACCOUNT_ID,
+@@ -127,7 +154,8 @@ app.post('/', zValidator('json', sendSchema), async (c) => {
+ 
+       await emailLogs.insert({
+         id: nanoid(),
+-        to_address: recipient,
++        to_masked: toMasked,
++        to_hash: toHash,
+         from_address: body.from,
+         subject,
+         status: 'sent',
+@@ -143,14 +171,15 @@ app.post('/', zValidator('json', sendSchema), async (c) => {
+         sent_at: now,
+       });
+ 
+-      results.push({ to: recipient, cfId: cfResult.id });
++      results.push({ recipient: toMasked, cfId: cfResult.id });
+       successCount++;
+     } catch (err) {
+       const message = err instanceof Error ? err.message : 'Unknown error';
+ 
+       await emailLogs.insert({
+         id: nanoid(),
+-        to_address: recipient,
++        to_masked: toMasked,
++        to_hash: toHash,
+         from_address: body.from,
+         subject,
+         status: 'failed',
+@@ -166,7 +195,7 @@ app.post('/', zValidator('json', sendSchema), async (c) => {
+         sent_at: now,
+       });
+ 
+-      results.push({ to: recipient, error: message });
++      results.push({ recipient: toMasked, error: 'Delivery failed' });
+     }
+   }
+ 
+diff --git a/services/worker/src/services/cloudflare.ts b/services/worker/src/services/cloudflare.ts
+index 0e08084..d8fa0e6 100644
+--- a/services/worker/src/services/cloudflare.ts
++++ b/services/worker/src/services/cloudflare.ts
+@@ -186,6 +186,7 @@ export interface CFSendEmailParams {
+   html?: string;
+   text?: string;
+   replyTo?: string;
++  headers?: Record<string, string>;
+ }
+ 
+ export interface CFSendEmailResult {
+diff --git a/services/worker/wrangler.jsonc b/services/worker/wrangler.jsonc
+index 13549c0..654c60b 100644
+--- a/services/worker/wrangler.jsonc
++++ b/services/worker/wrangler.jsonc
+@@ -42,14 +42,8 @@
+   // Upload source maps so stack traces in the Cloudflare dashboard are readable
+   "upload_source_maps": true,
+ 
+-  // Static assets: the built admin SPA is served from the Worker itself.
+-  // All unmatched routes fall through to index.html (SPA mode).
+-  // Build admin first: cd services/admin && pnpm build
+-  "assets": {
+-    "directory": "../admin/dist",
+-    "binding": "ASSETS",
+-    "not_found_handling": "single-page-application"
+-  },
++  // Orbita privacy fork intentionally does not deploy the admin SPA. Domain,
++  // key, and migration operations stay in the protected deployment workflow.
+ 
+   // D1 SQLite database
+   "d1_databases": [
+@@ -70,7 +64,8 @@
+   ],
+ 
+   // Local-dev defaults read by Localflare for manifest visibility.
+-  // Sensitive values (ADMIN_TOKEN, SESSION_SECRET, CF_API_TOKEN, CF_ACCOUNT_ID)
++  // Sensitive values (ADMIN_TOKEN, SESSION_SECRET, CF_API_TOKEN,
++  // CF_ACCOUNT_ID, RECIPIENT_HASH_KEY)
+   // and per-deploy values (ADMIN_ORIGIN in production) are set via
+   // `wrangler secret put`. A Worker cannot have a `var` and a `secret`
+   // with the same name — the `secret put` call fails with code 10053.

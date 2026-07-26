@@ -10,3 +10,10 @@ Run it from the repository root with a valid parent commit:
 ```powershell
 ./scripts/New-SitesDeploymentCommit.ps1 -ParentSha <commit-sha>
 ```
+
+## Newsletter migration
+
+`newsletter-migrate.mjs` runs through the local Wrangler binary and never
+prints a full address. It defaults to dry-run. `--apply` writes the legacy
+backfill; `--rotate --apply` rotates AES ciphertext and blind indexes after a
+duplicate preflight. Keep campaign sending disabled throughout either run.
