@@ -35,6 +35,8 @@ type Tab = "compose" | "sent" | "subscribers" | "settings";
 const blankContent = (): Content => ({ subject: "", preheader: "", blocks: [{ type: "paragraph", text: "" }] });
 const blankMetrics: Metrics = { total: 0, pending: 0, active: 0, unsubscribed: 0, bounced: 0, needs_reconfirmation: 0 };
 const blankSettings: Settings = { enabled: false, organizationName: "Órbita", postalAddress: "", privacyUrl: "", contactUrl: "", publicBaseUrl: "", fromEmail: "", fromName: "Órbita", replyTo: "", fromVerified: false, readyToSend: false, missingConfiguration: [] };
+
+function contentEmpty(c: Content) { return !c.subject.trim() && !c.preheader.trim() && c.blocks.every(function(b) { return !("text" in b) || !b.text.trim(); }) && c.blocks.every(function(b) { return !("items" in b) || b.items.every(function(i) { return !i.trim(); }); }); }
 const statusLabel: Record<Subscriber["status"], string> = { pending: "Pendiente", active: "Activo", unsubscribed: "Suprimido", bounced: "Rebotado", needs_reconfirmation: "Debe reconfirmar" };
 
 function formatDate(value?: string | null) {
@@ -171,7 +173,7 @@ export function AdminNewsletter() {
   }, [content, dirty, draftId, loadCampaigns, loadPreview, saving]);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty || contentEmpty(content)) return;
     const timer = window.setTimeout(() => { void saveDraft(); }, 900);
     return () => window.clearTimeout(timer);
   }, [dirty, content, saveDraft]);
@@ -197,7 +199,7 @@ export function AdminNewsletter() {
   }
   async function testDraft() {
     if (dirty) await saveDraft();
-    if (!draftId) return;
+    if (!draftId) { setError("Guarda el borrador antes de probar."); return; }
     setBusy(true);
     try {
       const result = await jsonFetch<{ testedRevision: number }>(`/api/newsletters/${draftId}/test`, { method: "POST" });
@@ -206,6 +208,7 @@ export function AdminNewsletter() {
     finally { setBusy(false); }
   }
   async function sendDraft() {
+    if (dirty) await saveDraft();
     if (!draftId || dirty || testedRevision !== serverRevision) return;
     setBusy(true);
     try {
@@ -241,12 +244,12 @@ export function AdminNewsletter() {
     {tab === "compose" && <div className="newsletter-admin-compose">
       <aside className="newsletter-admin-drafts"><div className="newsletter-admin-section-title"><span><span className="eyebrow">BORRADORES</span><strong>{drafts.length}</strong></span><button className="icon-button" type="button" title="Nuevo borrador" onClick={() => { setDraftId(null); setContent(blankContent()); setServerRevision(0); setTestedRevision(null); setDirty(false); setPreview(null); }}><FilePlus2 size={17} /></button></div>{drafts.map((item) => <div className="newsletter-admin-draft-entry" key={item.publicId}><button type="button" className={`newsletter-admin-draft-row ${draftId === item.publicId ? "selected" : ""}`} onClick={() => void loadDetail(item.publicId).then(() => loadPreview(item.publicId))}><strong>{item.subject}</strong><span>{formatDate(item.updatedAt)}</span></button><button type="button" className="newsletter-admin-delete-draft" title="Eliminar borrador" onClick={() => void deleteDraft(item.publicId).catch((reason) => setError(reason.message))}><Trash2 size={14} /></button></div>)}</aside>
       <div className="newsletter-admin-editor-column">
-        <div className="newsletter-admin-editor-top"><div><label htmlFor="newsletter-subject">Asunto</label><input id="newsletter-subject" value={content.subject} onChange={(event) => changeContent({ ...content, subject: event.target.value })} /></div><div className="newsletter-admin-test-state">{testCurrent ? <><ShieldCheck size={16} /> Prueba vigente</> : <><CircleAlert size={16} /> Requiere prueba</>}</div></div>
+        <div className="newsletter-admin-editor-top"><div><label htmlFor="newsletter-subject">Asunto</label><input id="newsletter-subject" value={content.subject} onChange={(event) => changeContent({ ...content, subject: event.target.value })} /></div><div className="newsletter-admin-test-state">{testCurrent ? <><ShieldCheck size={16} /> Prueba vigente</> : dirty ? <span className="newsletter-admin-test-pending">Sin probar</span> : <><CircleAlert size={16} /> Requiere prueba</>}</div></div>
         <div className="newsletter-admin-editor-top"><div><label htmlFor="newsletter-preheader">Preheader</label><input id="newsletter-preheader" value={content.preheader} onChange={(event) => changeContent({ ...content, preheader: event.target.value })} /></div></div>
         <div className="newsletter-admin-toolbar" role="toolbar" aria-label="Formato"><button type="button" title="Negrita" onClick={() => formatSelection("**")}><Bold size={16} /></button><button type="button" title="Cursiva" onClick={() => formatSelection("_")}><Italic size={16} /></button><button type="button" title="Enlace" onClick={() => { const url = window.prompt("URL HTTPS"); if (url) formatSelection("[", `](${url})`); }}><LinkIcon size={16} /></button><button type="button" title="Párrafo" onClick={() => addBlock("paragraph")}>P</button><button type="button" title="Encabezado" onClick={() => addBlock("heading")}>H2</button><button type="button" title="Lista" onClick={() => addBlock("bulletList")}><List size={16} /></button><button type="button" title="Lista numerada" onClick={() => addBlock("orderedList")}><ListOrdered size={16} /></button><button type="button" title="Cita" onClick={() => addBlock("quote")}><Quote size={16} /></button><button type="button" title="Separador" onClick={() => addBlock("divider")}><Minus size={16} /></button><button type="button" title="Imagen" onClick={() => fileRef.current?.click()}><FileImage size={16} /></button><input className="sr-only" ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file).catch((reason) => setError(reason.message)); }} /></div>
         <div className="newsletter-admin-blocks">{content.blocks.map((block, index) => <div key={index} className={`newsletter-admin-block ${selectedBlock === index ? "selected" : ""}`} onClick={() => setSelectedBlock(index)}>{block.type === "divider" ? <div className="newsletter-admin-divider"><Minus /></div> : block.type === "image" ? <div className="newsletter-admin-image-block"><label>URL<input value={block.url} onChange={(event) => changeBlock(index, { ...block, url: event.target.value })} /></label><label>Texto alternativo<input value={block.alt} onChange={(event) => changeBlock(index, { ...block, alt: event.target.value })} /></label><label>Pie<input value={block.caption ?? ""} onChange={(event) => changeBlock(index, { ...block, caption: event.target.value })} /></label></div> : "items" in block ? <div className="newsletter-admin-list-block">{block.items.map((item, itemIndex) => <input key={itemIndex} value={item} aria-label={`Elemento ${itemIndex + 1}`} onChange={(event) => { const items = [...block.items]; items[itemIndex] = event.target.value; changeBlock(index, { ...block, items }); }} />)}<button type="button" onClick={() => changeBlock(index, { ...block, items: [...block.items, ""] })}>Añadir elemento</button></div> : <div className="newsletter-admin-text-block"><textarea id={`newsletter-block-${index}`} value={block.text} aria-label={`Bloque ${index + 1}`} onChange={(event) => changeBlock(index, { ...block, text: event.target.value })} /></div>}{content.blocks.length > 1 && <button className="newsletter-admin-delete-block" type="button" title="Eliminar bloque" onClick={(event) => { event.stopPropagation(); const blocks = content.blocks.filter((_, item) => item !== index); setSelectedBlock(Math.max(0, index - 1)); changeContent({ ...content, blocks }); }}><Trash2 size={15} /></button>}</div>)}</div>
         <div className="newsletter-admin-editor-footer"><label>Pie legal automático</label><p>{settings.organizationName || "Órbita"} · {settings.postalAddress || "Configura el domicilio"} · Privacidad · Contacto · Ver en navegador · Anular suscripción</p></div>
-        <div className="newsletter-admin-editor-actions"><button className="newsletter-admin-secondary" type="button" disabled={busy || dirty || !draftId} onClick={() => void testDraft()}><ShieldCheck size={16} /> Enviar prueba</button><button className="newsletter-admin-primary" type="button" disabled={busy || metrics.active === 0 || !testCurrent || !preview?.readyToSend} onClick={() => setSendOpen(true)}><Send size={16} /> Revisar y enviar</button></div>
+        <div className="newsletter-admin-editor-actions"><button className="newsletter-admin-secondary" type="button" disabled={busy || !draftId} onClick={() => void testDraft()}><ShieldCheck size={16} /> Enviar prueba</button><button className="newsletter-admin-primary" type="button" disabled={busy || metrics.active === 0 || !testCurrent || !preview?.readyToSend} onClick={() => setSendOpen(true)}><Send size={16} /> Revisar y enviar</button></div>
       </div>
       <aside className="newsletter-admin-preview"><div className="newsletter-admin-preview-head"><strong>Vista previa</strong><div className="newsletter-admin-segmented"><button className={previewMode === "html" ? "active" : ""} onClick={() => setPreviewMode("html")}>HTML</button><button className={previewMode === "text" ? "active" : ""} onClick={() => setPreviewMode("text")}>Texto</button></div></div>{preview ? previewMode === "html" ? <iframe title="Vista previa" sandbox="" srcDoc={preview.html} /> : <pre>{preview.text}</pre> : <div className="newsletter-admin-empty"><Eye size={22} /><p>Guarda el borrador para previsualizarlo.</p></div>}</aside>
     </div>}
