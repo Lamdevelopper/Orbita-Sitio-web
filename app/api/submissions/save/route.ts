@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { articles, authors } from "../../../../db/schema";
 import { cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
+import { isHomepageSlot, placeArticle } from "../../../../lib/editorial";
 
 async function getOrCreateAuthor(name: string) {
   const db = getDb();
@@ -29,9 +30,7 @@ export async function POST(request: Request) {
     const status = ["draft", "review", "scheduled", "published"].includes(String(body.status))
       ? String(body.status) as "draft" | "review" | "scheduled" | "published"
       : "draft";
-    const homepageSlot = ["hero", "featured", "feed", "hidden"].includes(String(body.homepageSlot))
-      ? String(body.homepageSlot) as "hero" | "featured" | "feed" | "hidden"
-      : "feed";
+    const homepageSlot = isHomepageSlot(body.homepageSlot) ? body.homepageSlot : "feed";
 
     const authorName = cleanText(body.author, 120) || "Equipo Órbita";
     const authorId = await getOrCreateAuthor(authorName);
@@ -40,6 +39,7 @@ export async function POST(request: Request) {
       ? (body.images as Array<{ ref: string; url: string; caption?: string }>).filter((img) => img.ref && img.url)
       : [];
 
+    // Insert in hidden state first, then let placeArticle handle slot and rank.
     const [article] = await getDb().insert(articles).values({
       title, slug, body: content, category,
       authorId,
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       editionId: body.editionId ? Number(body.editionId) : null,
       heroUrl: cleanText(body.heroUrl, 1000) || null,
       heroCaption: cleanText(body.heroCaption, 500) || null,
-      homepageSlot, homepageRank: Math.max(0, Number(body.homepageRank) || 0),
+      homepageSlot: "hidden", homepageRank: 0,
       tags: Array.isArray(body.tags) ? body.tags.filter((item: unknown) => typeof item === "string").slice(0, 12) as string[] : [],
       images: imageEntries,
       status, readingMinutes: Math.max(1, Math.min(90, Number(body.readingMinutes) || 5)),
@@ -56,6 +56,13 @@ export async function POST(request: Request) {
       publishedAt: status === "published" ? now : null,
       createdAt: now, updatedAt: now,
     }).returning();
-    return Response.json({ article, success: true }, { status: 201 });
+
+    const placement = await placeArticle(article.id, homepageSlot, Number(body.homepageRank) || 0);
+    return Response.json({
+      article: placement.article,
+      success: true,
+      displacedHeroCount: placement.displacedHeroCount,
+      displacedHeroSlugs: placement.displacedHeroSlugs,
+    }, { status: 201 });
   } catch (error) { return routeError(error); }
 }
