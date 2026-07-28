@@ -1,4 +1,4 @@
-# Editorial CMS
+﻿# Editorial CMS
 
 The admin route (/admin) has operational tabs for articles, authors, editions, and Newsletter.
 
@@ -22,6 +22,13 @@ The admin route (/admin) has operational tabs for articles, authors, editions, a
 - **app/api/authors/route.ts** - GET (list), POST (create)
 - **app/api/authors/[id]/route.ts** - PATCH (update), DELETE (remove, blocked if articles assigned)
 - **app/api/editions/route.ts** - GET (list), POST (create), PATCH (update)
+
+
+- **Importación automática** - Botón en el header del admin que abre `/admin/post`.
+  Permite pegar o cargar un `.txt` / `.md` con la plantilla del escritor,
+  previsualizar el parseo, subir imágenes y guardar como borrador.
+  El guardado invoca `placeArticle()` para mantener la invariante de un solo héroe.
+  La guía PDF (`/docs/Guia_entrega_articulos_Orbita.pdf`) sigue disponible como referencia.
 
 ## Key behaviors
 
@@ -64,3 +71,4 @@ To regenerate: run the fpdf2 script in public/docs/gen_guide.py.
 - Newsletter remains fail-closed until both the D1 setting and
   `NEWSLETTER_ENABLED=true` are present. Email delivery runs in the separate
   scheduled Worker documented in `SITES_DEPLOY.md`.
+
