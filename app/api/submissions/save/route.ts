@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { articles, authors } from "../../../../db/schema";
-import { cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
+import { checkSameOrigin, cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
 import { isHomepageSlot, placeArticle } from "../../../../lib/editorial";
 
 async function getOrCreateAuthor(name: string) {
@@ -17,6 +17,7 @@ async function getOrCreateAuthor(name: string) {
 
 export async function POST(request: Request) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const body = await request.json() as Record<string, unknown>;
     const title = cleanText(body.title, 180);

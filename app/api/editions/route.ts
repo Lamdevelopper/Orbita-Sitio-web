@@ -1,7 +1,7 @@
 import { desc, eq, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { editions } from "../../../db/schema";
-import { cleanText, isEditor, routeError, validSlug } from "../../../lib/api";
+import { checkSameOrigin, cleanText, isEditor, routeError, validSlug } from "../../../lib/api";
 
 export async function GET() {
   try { return Response.json({ editions: await getDb().select().from(editions).orderBy(desc(editions.isCurrent), desc(editions.number)) }); }
@@ -19,6 +19,7 @@ function editionValues(body: Record<string, unknown>) {
 
 export async function POST(request: Request) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const values = editionValues(await request.json() as Record<string, unknown>);
     if (!values.title || !validSlug(values.slug)) return Response.json({ error: "Titulo y slug validos son obligatorios" }, { status: 400 });
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const body = await request.json() as Record<string, unknown>;
     const id = Number(body.id);

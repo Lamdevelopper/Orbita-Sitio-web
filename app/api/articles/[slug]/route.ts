@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { articles, authors } from "../../../../db/schema";
-import { cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
+import { checkSameOrigin, cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
 import { isArticleStatus, isHomepageSlot, placeArticle } from "../../../../lib/editorial";
 
 export async function GET(_: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -14,6 +14,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const slug = (await params).slug;
     const body = await request.json() as Record<string, unknown>;
@@ -50,6 +51,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const [row] = await getDb().update(articles).set({ status: "archived", homepageSlot: "hidden", homepageRank: 0, updatedAt: new Date() }).where(eq(articles.slug, (await params).slug)).returning();
     if (!row) return Response.json({ error: "No encontrado" }, { status: 404 });

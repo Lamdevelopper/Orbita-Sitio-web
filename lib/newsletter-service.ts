@@ -9,14 +9,16 @@ import {
   subscriberTokens,
   subscribers,
 } from "../db/schema";
-import { isEditor } from "./api";
+import { isEditor, checkSameOrigin } from "./api";
 import { blindIndex, encryptEmail, generateToken, hashToken, hmacValue, maskEmail, normalizeEmail } from "./newsletter-crypto";
 import { isSubscriberStatus, sanitizeAuditMetadata, toMaskedSubscriberDto, validateNewsletterContent, type MaskedSubscriberDto } from "./newsletter-model";
 
 type NewsletterRuntime = {
-  NEWSLETTER_ENCRYPTION_KEY?: string;
-  NEWSLETTER_ENCRYPTION_KEYS?: string;
-  NEWSLETTER_INDEX_KEY?: string;
+ NEWSLETTER_ENCRYPTION_KEY?: string;
+ NEWSLETTER_ENCRYPTION_KEYS?: string;
+  SUBSCRIBER_RATE_LIMIT_KEY?: string;
+  NEWSLETTER_SIGNUP_ENABLED?: string;
+ NEWSLETTER_INDEX_KEY?: string;
   NEWSLETTER_KEY_VERSION?: string;
   NEWSLETTER_ENABLED?: string;
   NEWSLETTER_FROM_EMAIL?: string;
@@ -72,22 +74,22 @@ function currentEncryptionKey(): string {
   return requiredSecret("NEWSLETTER_ENCRYPTION_KEY");
 }
 
+/** Clave HMAC dedicada al rate limiting de suscripciones. */
+function subscriberRateLimitKey(): string {
+  const rt = runtime();
+  return rt.SUBSCRIBER_RATE_LIMIT_KEY ?? requiredSecret("NEWSLETTER_INDEX_KEY");
+}
+
+/** Devuelve true si el alta de suscriptores está habilitada. */
+export function isSignupEnabled(): boolean { return runtime().NEWSLETTER_SIGNUP_ENABLED === "true"; }
+
 export function newPublicId(): string {
   return `${Date.now().toString(36)}-${generateToken(9)}`;
 }
 
 export function adminGuard(request: Request): Response | null {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
-  const origin = request.headers.get("origin");
-  if (!origin) return null;
-  try {
-    if (new URL(origin).origin !== new URL(request.url).origin) {
-      return Response.json({ error: "Origen no permitido" }, { status: 403 });
-    }
-  } catch {
-    return Response.json({ error: "Origen no permitido" }, { status: 403 });
-  }
-  return null;
+  return checkSameOrigin(request);
 }
 
 export function editorEmail(request: Request): string | null {
@@ -341,11 +343,22 @@ export async function writeAudit(action: string, entityType: string, entityId: n
 }
 
 export async function hashActor(actor: string | null): Promise<string | null> {
-  return actor ? hmacValue(`actor:${normalizeEmail(actor)}`, requiredSecret("NEWSLETTER_INDEX_KEY")) : null;
+ return actor ? hmacValue(`actor:${normalizeEmail(actor)}`, requiredSecret("NEWSLETTER_INDEX_KEY")) : null;
 }
 
+/** Rate limit por IP usando clave dedicada. Devuelve 429 si se excede. */
 export async function checkSubscriberRateLimit(ip: string): Promise<{ allowed: boolean; retryAfter: number }> {
-  const keyHash = await hmacValue(`subscribe-ip:${ip}`, requiredSecret("NEWSLETTER_INDEX_KEY"));
+  const keyHash = await hmacValue(`subscribe-ip:${ip}`, subscriberRateLimitKey());
+  return rateLimitCounter(keyHash);
+}
+
+/** Cooldown por email (blind index). Evita que distintas IPs bombardeen el mismo buzón. */
+export async function checkSubscriberEmailCooldown(email: string): Promise<{ allowed: boolean; retryAfter: number }> {
+  const index = await blindIndex(normalizeSubscriberEmail(email), requiredSecret("NEWSLETTER_INDEX_KEY"));
+  return rateLimitCounter(index);
+}
+
+async function rateLimitCounter(keyHash: string): Promise<{ allowed: boolean; retryAfter: number }> {
   const db = getDb();
   const now = new Date();
   const windowMs = 15 * 60 * 1000;
