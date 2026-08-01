@@ -1,7 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { articles, authors } from "../../../db/schema";
-import { cleanText, isEditor, routeError, validSlug } from "../../../lib/api";
+import { checkSameOrigin, cleanText, isEditor, routeError, validSlug } from "../../../lib/api";
 import { editorialSlug } from "../../../lib/editorial";
 
 export async function GET(request: Request) {
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const body = await request.json() as Record<string, unknown>;
     const name = cleanText(body.name, 120);

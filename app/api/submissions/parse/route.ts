@@ -1,8 +1,9 @@
-import { isEditor, routeError } from "../../../../lib/api";
+import { checkSameOrigin, isEditor, routeError } from "../../../../lib/api";
 import { parseSubmission } from "../../../../lib/submission";
 
 export async function POST(request: Request) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const { text } = await request.json() as { text?: string };
     if (!text || typeof text !== "string" || text.trim().length === 0) {

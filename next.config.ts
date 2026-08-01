@@ -13,14 +13,14 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "img-src 'self' https: data: blob:",
-              "style-src 'self' 'unsafe-inline'",
-              "script-src 'self' 'unsafe-inline'",
-              "font-src 'self'",
-              "connect-src 'self'",
-              "base-uri 'none'",
+          value: [
+            "default-src 'self'",
+            "img-src 'self' https: data: blob:",
+            "style-src 'self' 'unsafe-inline' 'report-sample'",
+            "script-src 'self' 'unsafe-inline' 'report-sample'",
+            "font-src 'self'",
+            "connect-src 'self'",
+            "base-uri 'none'",
               "object-src 'none'",
               "form-action 'self'",
               "frame-ancestors 'none'",

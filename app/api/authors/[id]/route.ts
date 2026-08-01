@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { articles, authors } from "../../../../db/schema";
-import { cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
+import { checkSameOrigin, cleanText, isEditor, routeError, validSlug } from "../../../../lib/api";
 import { editorialSlug } from "../../../../lib/editorial";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const id = Number((await params).id);
     const body = await request.json() as Record<string, unknown>;
@@ -24,6 +25,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!isEditor(request)) return Response.json({ error: "No autorizado" }, { status: 401 });
+  const origin = checkSameOrigin(request); if (origin) return origin;
   try {
     const id = Number((await params).id);
     const assigned = await getDb().select({ id: articles.id }).from(articles).where(eq(articles.authorId, id)).limit(1);
