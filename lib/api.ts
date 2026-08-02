@@ -1,6 +1,12 @@
 ﻿import { env } from "cloudflare:workers";
 
-type Runtime = { EDITOR_API_KEY?: string; EDITOR_EMAILS?: string; ANALYTICS_OWNER?: string; MAX_EDITORS?: string };
+type Runtime = {
+  EDITOR_API_KEY?: string;
+  CODEX_ARTICLE_API_KEY?: string;
+  EDITOR_EMAILS?: string;
+  ANALYTICS_OWNER?: string;
+  MAX_EDITORS?: string;
+};
 
 /** Número máximo de editores permitidos en el allowlist. Configurable vía Sites. */
 function editorLimit(): number {
@@ -43,6 +49,31 @@ export function isApiKeyEditor(request: Request): boolean {
   const configured = (env as unknown as Runtime).EDITOR_API_KEY;
   if (!configured) return false;
   return request.headers.get("authorization") === `Bearer ${configured}`;
+}
+
+/**
+ * Dedicated server-to-server guard for Codex article ingestion. It is kept
+ * separate from the human editor guard and uses a distinct Worker secret so a
+ * leaked automation token cannot impersonate an OAuth editor elsewhere.
+ */
+export async function isCodexArticleApiClient(request: Request): Promise<boolean> {
+  const configured = (env as unknown as Runtime).CODEX_ARTICLE_API_KEY;
+  if (!configured || configured.length < 32 || configured.length > 512) return false;
+
+  const authorization = request.headers.get("authorization") ?? "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  const provided = match?.[1]?.trim() ?? "";
+  if (!provided || provided.length > 512) return false;
+
+  const [expectedDigest, providedDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(configured)),
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(provided)),
+  ]);
+  const expected = new Uint8Array(expectedDigest);
+  const actual = new Uint8Array(providedDigest);
+  let difference = expected.length ^ actual.length;
+  for (let index = 0; index < expected.length; index++) difference |= expected[index] ^ actual[index];
+  return difference === 0;
 }
 
 export function cleanText(value: unknown, max = 5000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
