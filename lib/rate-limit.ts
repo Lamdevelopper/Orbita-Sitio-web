@@ -56,4 +56,5 @@ export function getClientIp(request: Request): string {
 export const limits = {
   subscribers: { maxRequests: 3, windowMs: 15 * 60 * 1000 },
   analytics: { maxRequests: 100, windowMs: 60 * 1000 },
+  automation: { maxRequests: 20, windowMs: 60 * 1000 },
 } as const;

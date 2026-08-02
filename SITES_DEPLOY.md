@@ -164,7 +164,10 @@ los bindings `DB` y `MEDIA`. Los valores operativos se administran en Sites.
 - `EDITOR_EMAILS`: lista de editores autorizados, separada por comas.
 - `ANALYTICS_OWNER`: propietarios del panel de analítica, separados por comas;
   si no existe, se usa la lista de `EDITOR_EMAILS`.
-- `EDITOR_API_KEY`: solo para automatización controlada; no exponer al cliente.
+- `EDITOR_API_KEY`: legado; no usarlo para la API de Codex.
+- `CODEX_ARTICLE_API_KEY`: secreto separado para `POST /api/automation/articles`.
+  Solo permite crear `draft`/`review` ocultos; no debe compartirse con el
+  frontend, el admin humano ni las rutas de newsletter.
 - `DB`: binding D1 del CMS.
 - `MEDIA`: binding R2 de imágenes.
 
