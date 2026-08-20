@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cmsArticles, cmsEdition } from "../../../lib/cms";
+import { getArticles, getEdition } from "../../../lib/content";
 
 export default async function EditionPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const edition = await cmsEdition(slug);
+  const edition = await getEdition(slug);
   if (!edition) notFound();
-  const stories = (await cmsArticles()).filter((article) => article.edition === edition.slug);
+  const stories = (await getArticles()).filter((article) => article.edition === edition.slug);
 
   return (
     <div className="edition-page">

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { getAnalyticsEmails } from "../../../lib/api";
 import { staticArticles } from "../../../lib/content";
+import { EDITORIAL_LOCALE, EDITORIAL_TIMEZONE, PAGINATION_LIMITS } from "../../../lib/editorial-contract";
 import { chatGPTSignOutPath, requireChatGPTUser } from "../../chatgpt-auth";
 
 export const dynamic = "force-dynamic";
@@ -104,12 +105,12 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
       COUNT(DISTINCT CASE WHEN event_name = 'article_90_percent' THEN session_id END) AS completions,
       SUM(CASE WHEN event_name IN ('share_clicked', 'link_copied') THEN 1 ELSE 0 END) AS shares
       FROM audience_events WHERE ${where} AND article_slug IS NOT NULL
-      GROUP BY article_slug ORDER BY pageViews DESC LIMIT 12`),
+      GROUP BY article_slug ORDER BY pageViews DESC LIMIT ${PAGINATION_LIMITS.default}`),
     db.all(sql<SourceRow>`SELECT COALESCE(NULLIF(referrer_host, ''), 'Directo') AS source, COUNT(*) AS visits
       FROM audience_events WHERE ${where} AND event_name = 'page_viewed'
       GROUP BY source ORDER BY visits DESC LIMIT 8`),
     db.all(sql<EventRow>`SELECT id, event_name AS eventName, article_slug AS articleSlug, path, referrer_host AS referrerHost, occurred_at AS occurredAt
-      FROM audience_events WHERE ${where} ORDER BY occurred_at DESC LIMIT 100`),
+      FROM audience_events WHERE ${where} ORDER BY occurred_at DESC LIMIT ${PAGINATION_LIMITS.publicMax}`),
     db.all(sql<OptionRow>`SELECT DISTINCT article_slug AS value FROM audience_events WHERE occurred_at >= ${since} AND article_slug IS NOT NULL ORDER BY value`),
     db.all(sql<OptionRow>`SELECT DISTINCT event_name AS value FROM audience_events WHERE occurred_at >= ${since} ORDER BY value`),
     db.all(sql<CountRow>`SELECT COUNT(*) AS value FROM (
@@ -156,16 +157,16 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
         </form>
 
         <section className="analytics-metrics" aria-label="Indicadores principales">
-          <article><span>LECTORES</span><strong>{totals.readers.toLocaleString("es-MX")}</strong><small>{totals.sessions.toLocaleString("es-MX")} sesiones</small></article>
-          <article><span>LECTORES ACTIVOS (30 S)</span><strong>{totals.meaningfulReads.toLocaleString("es-MX")}</strong><small>{percent(totals.meaningfulReads, totals.readers)} de lectores</small></article>
-          <article><span>COMPLETARON 90%</span><strong>{totals.completions.toLocaleString("es-MX")}</strong><small>{percent(totals.completions, totals.readers)} de lectores</small></article>
-          <article><span>LEYERON OTRA HISTORIA</span><strong>{totals.secondStorySessions.toLocaleString("es-MX")}</strong><small>sesiones con 2+ artículos</small></article>
-          <article><span>REGRESARON</span><strong>{totals.returningReaders.toLocaleString("es-MX")}</strong><small>lectores con 2+ sesiones</small></article>
-          <article><span>COMPARTIERON</span><strong>{totals.shares.toLocaleString("es-MX")}</strong><small>{percent(totals.shares, totals.sessions)} de sesiones</small></article>
+          <article><span>LECTORES</span><strong>{totals.readers.toLocaleString(EDITORIAL_LOCALE)}</strong><small>{totals.sessions.toLocaleString(EDITORIAL_LOCALE)} sesiones</small></article>
+          <article><span>LECTORES ACTIVOS (30 S)</span><strong>{totals.meaningfulReads.toLocaleString(EDITORIAL_LOCALE)}</strong><small>{percent(totals.meaningfulReads, totals.readers)} de lectores</small></article>
+          <article><span>COMPLETARON 90%</span><strong>{totals.completions.toLocaleString(EDITORIAL_LOCALE)}</strong><small>{percent(totals.completions, totals.readers)} de lectores</small></article>
+          <article><span>LEYERON OTRA HISTORIA</span><strong>{totals.secondStorySessions.toLocaleString(EDITORIAL_LOCALE)}</strong><small>sesiones con 2+ artículos</small></article>
+          <article><span>REGRESARON</span><strong>{totals.returningReaders.toLocaleString(EDITORIAL_LOCALE)}</strong><small>lectores con 2+ sesiones</small></article>
+          <article><span>COMPARTIERON</span><strong>{totals.shares.toLocaleString(EDITORIAL_LOCALE)}</strong><small>{percent(totals.shares, totals.sessions)} de sesiones</small></article>
         </section>
 
         <section className="analytics-panel analytics-trend">
-          <div className="analytics-panel-heading"><div><span className="eyebrow">TENDENCIA</span><h2>Lecturas por día</h2></div><p>{totals.pageViews.toLocaleString("es-MX")} páginas vistas en el periodo</p></div>
+          <div className="analytics-panel-heading"><div><span className="eyebrow">TENDENCIA</span><h2>Lecturas por día</h2></div><p>{totals.pageViews.toLocaleString(EDITORIAL_LOCALE)} páginas vistas en el periodo</p></div>
           {daily.length ? <div className="daily-chart" aria-label="Gráfica de páginas vistas por día">{daily.map((row) => <div className="daily-column" key={row.day} title={`${row.day}: ${row.pageViews} vistas, ${row.meaningfulReads} lecturas activas`}><div className="daily-value">{row.pageViews}</div><div className="daily-bar"><span style={{ height: `${Math.max(5, row.pageViews / maxDaily * 100)}%` }} /></div><small>{row.day.slice(5)}</small></div>)}</div> : <div className="analytics-empty">Aún no hay eventos para este filtro.</div>}
         </section>
 
@@ -181,8 +182,8 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
         </div>
 
         <section className="analytics-panel analytics-events">
-          <div className="analytics-panel-heading"><div><span className="eyebrow">LISTADO</span><h2>Eventos recientes</h2></div><p>Máximo 100 eventos · {totals.events.toLocaleString("es-MX")} en el periodo</p></div>
-          <div className="analytics-table-wrap"><table><thead><tr><th>Hora</th><th>Evento</th><th>Artículo / ruta</th><th>Origen</th></tr></thead><tbody>{eventRows.map((row) => <tr key={row.id}><td>{new Date(number(row.occurredAt)).toLocaleString("es-MX", { timeZone: "America/Mexico_City", dateStyle: "short", timeStyle: "short" })}</td><td><span className="event-pill">{EVENT_LABELS[row.eventName] ?? row.eventName}</span></td><td><strong>{articleTitle(row.articleSlug)}</strong><small>{row.path}</small></td><td>{row.referrerHost || "Directo"}</td></tr>)}</tbody></table>{eventRows.length === 0 && <div className="analytics-empty">No hay eventos para mostrar.</div>}</div>
+          <div className="analytics-panel-heading"><div><span className="eyebrow">LISTADO</span><h2>Eventos recientes</h2></div><p>Máximo {PAGINATION_LIMITS.publicMax} eventos · {totals.events.toLocaleString(EDITORIAL_LOCALE)} en el periodo</p></div>
+          <div className="analytics-table-wrap"><table><thead><tr><th>Hora</th><th>Evento</th><th>Artículo / ruta</th><th>Origen</th></tr></thead><tbody>{eventRows.map((row) => <tr key={row.id}><td>{new Date(number(row.occurredAt)).toLocaleString(EDITORIAL_LOCALE, { timeZone: EDITORIAL_TIMEZONE, dateStyle: "short", timeStyle: "short" })}</td><td><span className="event-pill">{EVENT_LABELS[row.eventName] ?? row.eventName}</span></td><td><strong>{articleTitle(row.articleSlug)}</strong><small>{row.path}</small></td><td>{row.referrerHost || "Directo"}</td></tr>)}</tbody></table>{eventRows.length === 0 && <div className="analytics-empty">No hay eventos para mostrar.</div>}</div>
         </section>
       </main>
     </div>

@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { ARTICLE_DEFAULTS, articleStatuses, homepageSlots } from "../lib/editorial-contract";
 
 export const authors = sqliteTable("authors", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -36,12 +37,12 @@ export const articles = sqliteTable("articles", {
   tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default([]),
   heroUrl: text("hero_url"),
   heroCaption: text("hero_caption"),
-  homepageSlot: text("homepage_slot", { enum: ["hero", "featured", "feed", "hidden"] }).notNull().default("feed"),
+  homepageSlot: text("homepage_slot", { enum: homepageSlots }).notNull().default(ARTICLE_DEFAULTS.homepageSlot),
   homepageRank: integer("homepage_rank").notNull().default(0),
   authorId: integer("author_id").references(() => authors.id, { onDelete: "restrict" }).notNull(),
   editionId: integer("edition_id").references(() => editions.id, { onDelete: "set null" }),
-  status: text("status", { enum: ["draft", "review", "scheduled", "published", "archived"] }).notNull().default("draft"),
-  readingMinutes: integer("reading_minutes").notNull().default(5),
+  status: text("status", { enum: articleStatuses }).notNull().default(ARTICLE_DEFAULTS.status),
+  readingMinutes: integer("reading_minutes").notNull().default(ARTICLE_DEFAULTS.readingMinutes),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   publishedAt: integer("published_at", { mode: "timestamp_ms" }),
@@ -54,6 +55,13 @@ export const articles = sqliteTable("articles", {
   index("articles_author_idx").on(table.authorId),
   index("articles_edition_idx").on(table.editionId),
 ]);
+
+/** Short-lived D1 lease used to serialize homepage placement across isolates. */
+export const editorialLocks = sqliteTable("editorial_locks", {
+  scope: text("scope").primaryKey(),
+  owner: text("owner").notNull(),
+  leaseExpiresAt: integer("lease_expires_at").notNull(),
+});
 
 export const audienceEvents = sqliteTable("audience_events", {
   id: integer("id").primaryKey({ autoIncrement: true }),

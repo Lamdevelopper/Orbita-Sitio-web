@@ -3,11 +3,10 @@ import { getDb } from "../../../../db";
 import { articles, authors, editions } from "../../../../db/schema";
 import { checkSameOrigin, cleanText, isCodexArticleApiClient, routeError, validSlug } from "../../../../lib/api";
 import { checkRateLimit, getClientIp, limits } from "../../../../lib/rate-limit";
-import { isArticleStatus, placeArticle } from "../../../../lib/editorial";
+import { ARTICLE_DEFAULTS, ARTICLE_LIMITS, isCreatableArticleStatus, normalizeImages, normalizeReadingMinutes, normalizeTags } from "../../../../lib/editorial-contract";
+import { placeArticle } from "../../../../lib/editorial";
 
 const MAX_BODY_BYTES = 120_000;
-const MAX_IMAGES = 12;
-const MAX_TAGS = 12;
 
 function boundedInteger(value: unknown, fallback: number, min: number, max: number): number | null {
   if (value === undefined) return fallback;
@@ -80,45 +79,44 @@ export async function POST(request: Request) {
     }
 
     const body = JSON.parse(rawBody) as Record<string, unknown>;
-    const title = cleanText(body.title, 180);
-    const slug = cleanText(body.slug, 180);
-    const content = cleanText(body.body, 100000);
-    const category = cleanText(body.category, 80);
+    const title = cleanText(body.title, ARTICLE_LIMITS.title);
+    const slug = cleanText(body.slug, ARTICLE_LIMITS.slug);
+    const content = cleanText(body.body, ARTICLE_LIMITS.body);
+    const category = cleanText(body.category, ARTICLE_LIMITS.category);
     const authorId = boundedInteger(body.authorId, 0, 1, Number.MAX_SAFE_INTEGER);
-    const readingMinutes = boundedInteger(body.readingMinutes, 5, 1, 90);
-    const requestedStatus = body.status === undefined ? "draft" : String(body.status);
+    const readingInput = body.readingMinutes === undefined
+      ? ARTICLE_DEFAULTS.readingMinutes
+      : boundedInteger(body.readingMinutes, 0, ARTICLE_LIMITS.readingMin, ARTICLE_LIMITS.readingMax);
+    const readingMinutes = readingInput === null ? null : normalizeReadingMinutes(readingInput);
+    const requestedStatus = body.status === undefined ? ARTICLE_DEFAULTS.status : String(body.status);
     const requestOrigin = new URL(request.url).origin;
 
     if (!title || !validSlug(slug) || !content || !category || !authorId || !readingMinutes) {
       return Response.json({ error: "title, slug, body, category y authorId son obligatorios" }, { status: 400 });
     }
-    if (!isArticleStatus(requestedStatus) || !["draft", "review"].includes(requestedStatus)) {
+    if (!isCreatableArticleStatus(requestedStatus) || !["draft", "review"].includes(requestedStatus)) {
       return Response.json({ error: "La automatizacion solo puede crear draft o review" }, { status: 400 });
     }
     if (body.homepageSlot !== undefined && body.homepageSlot !== "hidden") {
       return Response.json({ error: "La automatizacion no puede colocar articulos en portada" }, { status: 400 });
     }
 
-    const heroUrl = body.heroUrl === undefined ? null : sameOriginMediaUrl(body.heroUrl, requestOrigin, 1000);
+    const heroUrl = body.heroUrl === undefined ? null : sameOriginMediaUrl(body.heroUrl, requestOrigin, ARTICLE_LIMITS.heroUrl);
     if (body.heroUrl !== undefined && !heroUrl) return Response.json({ error: "heroUrl debe ser media local" }, { status: 400 });
 
-    const rawImages = body.images === undefined ? [] : body.images;
-    if (!Array.isArray(rawImages) || rawImages.length > MAX_IMAGES) {
+    const normalizedImages = normalizeImages(body.images);
+    if (normalizedImages === null) {
       return Response.json({ error: "images invalido" }, { status: 400 });
     }
     const images: Array<{ ref: string; url: string; caption?: string }> = [];
-    for (const image of rawImages) {
-      if (!image || typeof image !== "object") return Response.json({ error: "images invalido" }, { status: 400 });
-      const item = image as Record<string, unknown>;
-      const ref = cleanText(item.ref, 80);
-      const url = sameOriginMediaUrl(item.url, requestOrigin, 1000);
+    for (const image of normalizedImages) {
+      const ref = image.ref;
+      const url = sameOriginMediaUrl(image.url, requestOrigin, ARTICLE_LIMITS.imageUrl);
       if (!ref || !url) return Response.json({ error: "Cada imagen requiere ref y media local" }, { status: 400 });
-      images.push({ ref, url, ...(item.caption ? { caption: cleanText(item.caption, 500) } : {}) });
+      images.push({ ref, url, ...(image.caption ? { caption: image.caption } : {}) });
     }
 
-    const tags = Array.isArray(body.tags)
-      ? body.tags.filter((item): item is string => typeof item === "string").slice(0, MAX_TAGS).map((item) => cleanText(item, 80))
-      : [];
+    const tags = normalizeTags(body.tags);
     if (body.tags !== undefined && !Array.isArray(body.tags)) return Response.json({ error: "tags invalido" }, { status: 400 });
 
     const editionId = body.editionId === undefined || body.editionId === null || body.editionId === ""
@@ -147,23 +145,31 @@ export async function POST(request: Request) {
       category,
       authorId,
       editionId,
-      dek: cleanText(body.dek, 420),
+      dek: cleanText(body.dek, ARTICLE_LIMITS.dek),
       heroUrl,
-      heroCaption: cleanText(body.heroCaption, 500) || null,
+      heroCaption: cleanText(body.heroCaption, ARTICLE_LIMITS.caption) || null,
       homepageSlot: "hidden",
       homepageRank: 0,
       tags,
       images,
       status: requestedStatus,
       readingMinutes,
-      seoTitle: cleanText(body.seoTitle, 180) || null,
-      seoDescription: cleanText(body.seoDescription, 320) || null,
+      seoTitle: cleanText(body.seoTitle, ARTICLE_LIMITS.seoTitle) || null,
+      seoDescription: cleanText(body.seoDescription, ARTICLE_LIMITS.seoDescription) || null,
       publishedAt: null,
       createdAt: now,
       updatedAt: now,
     }).returning();
 
-    const placement = await placeArticle(created.id, "hidden", 0);
+    let placement;
+    try {
+      placement = await placeArticle(created.id, "hidden", 0);
+    } catch (error) {
+      // Placement is a second D1 batch because the auto-increment id is only
+      // known after INSERT; remove the hidden row on failure so the slug can be retried.
+      await db.delete(articles).where(eq(articles.id, created.id));
+      throw error;
+    }
     return Response.json({
       success: true,
       idempotencyKey,

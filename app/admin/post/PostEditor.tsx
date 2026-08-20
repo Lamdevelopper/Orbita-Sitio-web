@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import {
+  ARTICLE_DEFAULTS, ARTICLE_LIMITS, ARTICLE_STATUS_LABELS, HOMEPAGE_SLOT_LABELS,
+  creatableArticleStatuses, homepageSlots, isCreatableArticleStatus, isHomepageSlot,
+  normalizeReadingMinutes, normalizeTags,
+  type CreatableArticleStatus, type HomepageSlot,
+} from "../../../lib/editorial-contract";
 
 type ImageRef = { ref: string; fileName: string; caption?: string };
 type ParsedSubmission = {
@@ -13,6 +19,10 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   })[character] ?? character);
+}
+
+function revokePreviewUrl(url: string) {
+  if (url.startsWith("blob:")) URL.revokeObjectURL(url);
 }
 
 function parseBodyHtml(body: string, imageUrls: Map<string, string>, images: ImageRef[], captions: Map<string, string>): string {
@@ -47,11 +57,13 @@ export function PostEditor({ email }: { email: string }) {
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroUrl, setHeroUrl] = useState("");
   const [heroCaption, setHeroCaption] = useState("");
-  const [readingMinutes, setReadingMinutes] = useState(5);
+  const [readingMinutes, setReadingMinutes] = useState<number>(ARTICLE_DEFAULTS.readingMinutes);
   const [editionId, setEditionId] = useState("");
-  const [homepageSlot, setHomepageSlot] = useState("feed");
-  const [homepageRank, setHomepageRank] = useState(10);
-  const [status, setStatus] = useState("draft");
+  const [homepageSlot, setHomepageSlot] = useState<HomepageSlot>(ARTICLE_DEFAULTS.homepageSlot);
+  // New imports append to Feed by default; editors can still choose a rank.
+  // Empty rank means append; the API owns the final contiguous rank.
+  const [homepageRank, setHomepageRank] = useState<number | undefined>(undefined);
+  const [status, setStatus] = useState<CreatableArticleStatus>(ARTICLE_DEFAULTS.status);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [editions, setEditions] = useState<Edition[]>([]);
@@ -72,23 +84,29 @@ export function PostEditor({ email }: { email: string }) {
     try {
       const res = await fetch("/api/submissions/parse", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
       const data = await res.json(); if (!res.ok) throw new Error(data.error || "Error al analizar");
+      revokePreviewUrl(heroUrl);
+      imageUrls.forEach(revokePreviewUrl);
+      setHeroFile(null); setHeroUrl(""); setHeroCaption(""); setEditionId("");
+      setHomepageSlot(ARTICLE_DEFAULTS.homepageSlot); setHomepageRank(undefined); setStatus(ARTICLE_DEFAULTS.status);
       setSubmission(data.submission);
-      setReadingMinutes(data.submission.readingMinutes || 5);
+      setReadingMinutes(normalizeReadingMinutes(data.submission.readingMinutes));
       const capMap = new Map<string, string>();
       for (const img of data.submission.images || []) { if (img.caption) capMap.set(img.ref, img.caption); }
       setImageCaptions(capMap); setImageFiles(new Map()); setImageUrls(new Map());
     } catch (err) { setMessage(err instanceof Error ? err.message : "No se pudo analizar"); setSubmission(null); }
     finally { setBusy(false); }
-  }, [text]);
+  }, [text, heroUrl, imageUrls]);
 
   const handleHeroSelect = useCallback((file: File) => {
+    revokePreviewUrl(heroUrl);
     setHeroFile(file); setHeroUrl(URL.createObjectURL(file));
-  }, []);
+  }, [heroUrl]);
 
   const handleImageSelect = useCallback((ref: string, file: File) => {
+    revokePreviewUrl(imageUrls.get(ref) || "");
     setImageFiles(prev => { const n = new Map(prev); n.set(ref, file); return n; });
     setImageUrls(prev => { const n = new Map(prev); n.set(ref, URL.createObjectURL(file)); return n; });
-  }, []);
+  }, [imageUrls]);
 
   const uploadToMedia = useCallback(async (file: File): Promise<string> => {
     const fd = new FormData(); fd.append("file", file);
@@ -118,14 +136,18 @@ export function PostEditor({ email }: { email: string }) {
         homepageSlot, homepageRank, status,
         heroUrl: finalHeroUrl || undefined,
         heroCaption: heroCaption || undefined,
-        images: imageEntries, tags: [] as string[],
+        images: imageEntries, tags: normalizeTags(undefined),
       };
       const res = await fetch("/api/submissions/save", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
       });
       const data = await res.json(); if (!res.ok) throw new Error(data.error || "No se pudo publicar");
-      setMessage("Articulo publicado correctamente.");
-      setSubmission(null); setText(""); setHeroFile(null); setHeroUrl(""); setHeroCaption(""); setReadingMinutes(5);
+      setMessage(status === "published" ? "Artículo publicado correctamente." : "Artículo guardado correctamente.");
+      revokePreviewUrl(heroUrl); imageUrls.forEach(revokePreviewUrl);
+      setSubmission(null); setText(""); setHeroFile(null); setHeroUrl(""); setHeroCaption("");
+      setImageFiles(new Map()); setImageUrls(new Map()); setImageCaptions(new Map());
+      setReadingMinutes(ARTICLE_DEFAULTS.readingMinutes); setEditionId(""); setHomepageRank(undefined);
+      setHomepageSlot(ARTICLE_DEFAULTS.homepageSlot); setStatus(ARTICLE_DEFAULTS.status);
     } catch (err) { setMessage(err instanceof Error ? err.message : "No se pudo guardar"); }
     finally { setBusy(false); }
   }, [submission, imageFiles, imageUrls, imageCaptions, heroFile, heroUrl, heroCaption, readingMinutes, editionId, homepageSlot, homepageRank, status, uploadToMedia]);
@@ -161,15 +183,15 @@ export function PostEditor({ email }: { email: string }) {
         </div>}
         <div className="post-meta-fields">
           <label>Edicion<select value={editionId} onChange={e => setEditionId(e.target.value)}><option value="">Sin edicion</option>{editions.map(ed => <option value={ed.id} key={ed.id}>No {ed.number} - {ed.title}</option>)}</select></label>
-          <label>Minutos de lectura<input type="number" min="1" max="90" value={readingMinutes} onChange={e => setReadingMinutes(Math.max(1, Math.min(90, Number(e.target.value) || 1)))} /></label>
-          <div className="admin-pair"><label>Ubicacion<select value={homepageSlot} onChange={e => setHomepageSlot(e.target.value)}><option value="hero">Hero</option><option value="featured">Destacado</option><option value="feed">Feed</option><option value="hidden">No mostrar</option></select></label><label>Prioridad<input type="number" min={0} value={homepageRank} onChange={e => setHomepageRank(Number(e.target.value))} /></label></div>
-          <label>Estado<select value={status} onChange={e => setStatus(e.target.value)}><option value="draft">Borrador</option><option value="published">Publicado</option></select></label>
+          <label>Minutos de lectura<input type="number" min={ARTICLE_LIMITS.readingMin} max={ARTICLE_LIMITS.readingMax} value={readingMinutes} onChange={e => setReadingMinutes(normalizeReadingMinutes(e.target.value))} /></label>
+          <div className="admin-pair"><label>Ubicacion<select value={homepageSlot} onChange={e => { if (isHomepageSlot(e.target.value)) setHomepageSlot(e.target.value); }}>{homepageSlots.map(slot => <option value={slot} key={slot}>{HOMEPAGE_SLOT_LABELS[slot]}</option>)}</select></label><label>Prioridad (opcional)<input type="number" min={1} placeholder="Al final" value={homepageRank ?? ""} onChange={e => { const value = Number(e.target.value); setHomepageRank(Number.isFinite(value) && value > 0 ? Math.floor(value) : undefined); }} /></label></div>
+          <label>Estado<select value={status} onChange={e => { if (isCreatableArticleStatus(e.target.value)) setStatus(e.target.value); }}>{creatableArticleStatuses.map(articleStatus => <option value={articleStatus} key={articleStatus}>{ARTICLE_STATUS_LABELS[articleStatus]}</option>)}</select></label>
           <div className="post-hero-section"><h3>Imagen principal</h3>
             <label>Archivo de portada<input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleHeroSelect(f); }} /></label>
             {heroUrl && <img src={heroUrl} alt="Hero preview" className="post-image-thumb" />}
             <label>Pie de foto principal<input type="text" value={heroCaption} onChange={e => setHeroCaption(e.target.value)} placeholder="Descripcion de la imagen principal" /></label>
           </div>
-          <button className="admin-form-button" onClick={handlePublish} disabled={busy}>{busy ? "Publicando..." : "Publicar"}</button>
+          <button className="admin-form-button" onClick={handlePublish} disabled={busy}>{busy ? "Guardando..." : status === "published" ? "Publicar" : "Guardar artículo"}</button>
         </div>
       </section>}
     </section>

@@ -29,4 +29,6 @@ export const authors = [
   teamProfile("valery-pena", "Valery Peña"),
   teamProfile("jose-gael-pilo-rosagel", "José Gael Pilo Rosagel"),
   teamProfile("leonardo-jaramillo-rosas", "Leonardo Jaramillo Rosas"),
+  teamProfile("fernando-rodriguez-solana", "Fernando Rodríguez Solana"),
+  teamProfile("cristofer-cisneros", "Cristofer Cisneros"),
 ];

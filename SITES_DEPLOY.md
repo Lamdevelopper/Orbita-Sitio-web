@@ -226,6 +226,14 @@ blind index, tokens o `RECIPIENT_HASH_KEY` de EmailFlare.
 6. Solo con reconciliación y backup comprobados, aplicar
    `drizzle/0005_drop_legacy_subscribers.sql`.
 
+### Migración editorial de placement
+
+Antes de desplegar el código que usa el lock de portada, aplicar
+`drizzle/0006_editorial_locks.sql` en el mismo D1 de Sites y confirmar que
+existe `editorial_locks(scope, owner, lease_expires_at)`. El código espera un
+lease de 15 segundos y reintenta la adquisición durante aproximadamente un
+segundo; no desplegar rutas de placement nuevas con la tabla ausente.
+
 ### EmailFlare y sender
 
 1. Clonar EmailFlare en repositorio separado al commit fijado en

@@ -1,5 +1,10 @@
 import type { Article } from "../lib/content";
 
+// Local branded artwork keeps draft stories usable when no editorial image has
+// been approved yet. Replace it with an article-specific asset once available;
+// do not add remote image hotlinks to the static fallback dataset.
+const editorialPlaceholderImage = "/og.png";
+
 export const articles: Article[] = [
   {
     slug: "jorge-ferrer-tecnologia-espacial-desde-mexico",
@@ -288,7 +293,8 @@ export const articles: Article[] = [
     authorSlug: "matias-lamoyi",
     readingMinutes: 8,
     published: "12 julio 2026",
-    image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1800&q=86",
+    image: editorialPlaceholderImage,
+    imageCaption: "Imagen editorial provisional de Órbita; sustituir cuando exista una portada aprobada.",
     edition: "en-preparacion",
     body: [
       { paragraphs: ["Antes de que un vehículo llegue a una plataforma de lanzamiento existe una cadena de preguntas, prototipos y personas aprendiendo a trabajar juntas.", "En México, una parte importante de esa cadena comienza en las universidades."] },
@@ -304,7 +310,8 @@ export const articles: Article[] = [
     authorSlug: "ari-huizar-mayo",
     readingMinutes: 6,
     published: "8 julio 2026",
-    image: "https://images.unsplash.com/photo-1517976547714-720226b864c1?auto=format&fit=crop&w=1400&q=84",
+    image: editorialPlaceholderImage,
+    imageCaption: "Imagen editorial provisional de Órbita; sustituir cuando exista una portada aprobada.",
     edition: "en-preparacion",
     body: [{ paragraphs: ["Diseñar un CanSat es negociar con límites reales. Cada gramo, cada miliamperio y cada línea de código compiten por un lugar dentro de la misión."] }, { heading: "La prueba también es diseño", paragraphs: ["Un prototipo útil no sólo funciona una vez. Debe dejar evidencia de qué se probó, bajo qué condiciones y qué cambió después."] }],
   },
@@ -317,7 +324,8 @@ export const articles: Article[] = [
     authorSlug: "valentina-gonzalez-mendez",
     readingMinutes: 10,
     published: "2 julio 2026",
-    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=84",
+    image: editorialPlaceholderImage,
+    imageCaption: "Imagen editorial provisional de Órbita; sustituir cuando exista una portada aprobada.",
     edition: "en-preparacion",
     body: [{ paragraphs: ["Nuestros ojos ocupan una franja diminuta del espectro electromagnético. Para estudiar el universo completo necesitamos instrumentos que traduzcan otras señales en datos interpretables."] }],
   },
@@ -330,8 +338,151 @@ export const articles: Article[] = [
     authorSlug: "daniela-oceguera",
     readingMinutes: 7,
     published: "25 junio 2026",
-    image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1400&q=84",
+    image: editorialPlaceholderImage,
+    imageCaption: "Imagen editorial provisional de Órbita; sustituir cuando exista una portada aprobada.",
     edition: "en-preparacion",
     body: [{ paragraphs: ["Un material espacial debe tolerar ciclos térmicos, radiación, vibración y vacío. Probarlo significa acelerar condiciones y observar cómo cambia antes de confiarle una misión."] }],
+  },
+  {
+    slug: "cuando-el-corazon-humano-latio-desde-la-orbita-lunar",
+    category: "Bitácora Espacial",
+    title: "Cuando el corazón humano latió desde la órbita lunar",
+    dek: "El Dr. Ramiro Iglesias Leal y la interpretación del primer electrocardiograma transmitido desde el espacio profundo.",
+    author: "Fernando Rodríguez Solana",
+    authorSlug: "fernando-rodriguez-solana",
+    readingMinutes: 5,
+    published: "marzo 2026",
+    image: "/articles/archive/heart-orbit-hero.png",
+    imageCaption: "La Tierra vista desde la oscuridad del espacio, imagen usada en la portada original de Órbita No. 9.",
+    edition: "marzo-2026",
+    sourceLabel: "Publicado originalmente en Órbita No. 9 · Marzo 2026. Texto recompuesto a partir de las páginas 10–15 de la edición impresa.",
+    body: [
+      {
+        heading: "El origen de la medicina aeroespacial",
+        paragraphs: [
+          "La exploración espacial abrió una pregunta tan urgente como ambiciosa: ¿puede el cuerpo humano sobrevivir y adaptarse fuera de la Tierra? Desde los primeros satélites hasta las misiones lunares, cada avance tecnológico obligó a entender mejor la fisiología en un entorno desconocido.",
+          "Durante las primeras décadas de la carrera espacial, la microgravedad, la radiación cósmica, el confinamiento y el estrés operacional representaban desafíos inéditos. Por eso el monitoreo biomédico se volvió una prioridad para los programas tripulados.",
+          "Entre las herramientas decisivas estuvo el electrocardiograma. Registrar la actividad eléctrica del corazón y transmitirla a estaciones en la Tierra permitió vigilar a las tripulaciones mientras volaban y construir la primera evidencia sobre la adaptación cardiovascular en el espacio.",
+          "En ese contexto, el cardiólogo mexicano Ramiro Iglesias Leal participó en la interpretación de un electrocardiograma transmitido desde una de las misiones más emblemáticas de la exploración espacial.",
+        ],
+        image: { url: "/articles/archive/heart-ramiro-iglesias.png", caption: "Ramiro Iglesias Leal durante una conferencia. Fuente: Ciencia MX." },
+      },
+      {
+        heading: "La vigilancia médica en las primeras misiones",
+        paragraphs: [
+          "Desde el inicio de la era espacial, las agencias entendieron que la seguridad de los astronautas dependía tanto de la ingeniería de las naves como de comprender los cambios fisiológicos producidos por el vuelo.",
+          "La telemetría biomédica permitió enviar en tiempo real la frecuencia cardiaca, la respiración, la presión arterial y la actividad eléctrica del corazón. Esos registros ayudaban a evaluar la salud de la tripulación y ofrecían datos científicos sobre la adaptación a la microgravedad.",
+          "A través de sensores colocados en el tórax, los especialistas podían analizar el ritmo cardiaco desde estaciones terrestres. En los años sesenta, transmitir datos biomédicos desde el espacio exigía sistemas complejos, pero su desarrollo hizo posible vigilar misiones cada vez más largas y distantes.",
+        ],
+        image: { url: "/articles/archive/heart-ultrasound.png", caption: "Chris Hadfield realiza una exploración médica mediante ultrasonido a bordo de la Estación Espacial Internacional. Fuente: Escudo Digital." },
+      },
+      {
+        heading: "La misión que cambió la historia de la exploración espacial",
+        paragraphs: [
+          "En diciembre de 1968, Apollo 8 se convirtió en la primera misión tripulada en abandonar la órbita terrestre, viajar hasta la Luna y entrar en órbita alrededor de ella. Frank Borman, James Lovell y William Anders demostraron que las misiones lunares eran posibles.",
+          "Además de sus objetivos de navegación y reconocimiento, la misión registró cómo respondía el organismo durante un viaje de varios días y a una distancia mucho mayor que la de los vuelos anteriores.",
+          "Los electrocardiogramas transmitidos desde la nave permitieron evaluar la respuesta fisiológica de los astronautas ante el estrés del vuelo, las maniobras orbitales y la microgravedad prolongada.",
+        ],
+        image: { url: "/articles/archive/heart-apollo8.png", caption: "La tripulación de Apollo 8 durante pruebas previas al vuelo. Fuente: NASA." },
+      },
+      {
+        paragraphs: [],
+        image: { url: "/articles/archive/heart-space-suit.png", caption: "Preparación y verificación de un traje espacial antes de una misión. Fuente: Spacelabs Healthcare." },
+      },
+      {
+        heading: "Un cardiólogo mexicano en la historia de la medicina espacial",
+        paragraphs: [
+          "Dentro del equipo internacional que analizaba los datos biomédicos se encontraba Ramiro Iglesias Leal. Su trabajo consistió en evaluar registros electrocardiográficos obtenidos por telemetría y buscar alteraciones del ritmo asociadas con las condiciones del vuelo.",
+          "Su participación fue notable para la medicina latinoamericana. En una época dominada por Estados Unidos y la Unión Soviética, la colaboración internacional permitió que especialistas de distintos países contribuyeran a interpretar los datos de las misiones espaciales.",
+          "Los resultados mostraron que el corazón humano podía mantener un funcionamiento adecuado en microgravedad, aunque también revelaron adaptaciones como cambios en la distribución de fluidos corporales y variaciones en la frecuencia cardiaca.",
+        ],
+        image: { url: "/articles/archive/heart-ecg.png", caption: "Registro electrocardiográfico de William Anders. Tomado de Iglesias Leal, Cardiología aeroespacial (2012)." },
+      },
+      {
+        paragraphs: [],
+        image: { url: "/articles/archive/heart-ramiro-portrait.png", caption: "Ramiro Iglesias Leal, pionero de la cardiología espacial y la telemedicina." },
+      },
+      {
+        heading: "El corazón humano más allá de la Tierra",
+        paragraphs: [
+          "El registro de electrocardiogramas confirmó que el sistema cardiovascular puede adaptarse a condiciones extremas. En microgravedad, los fluidos corporales se redistribuyen hacia la parte superior del cuerpo y cambian la dinámica circulatoria, el retorno venoso y la regulación del volumen sanguíneo.",
+          "La interpretación de los registros obtenidos durante las primeras misiones permitió comprender mejor esos procesos y desarrollar protocolos para vuelos posteriores. Con el tiempo, la medicina aeroespacial incorporó ultrasonido, análisis metabólicos y sistemas de telemetría más avanzados.",
+          "Hoy los astronautas de la Estación Espacial Internacional siguen siendo monitoreados con sistemas biomédicos sofisticados. Muchos de esos procedimientos tienen su origen en las experiencias de la era Apollo.",
+        ],
+        image: { url: "/articles/archive/heart-iss-exercise.png", caption: "Monitoreo biomédico de un astronauta a bordo de la Estación Espacial Internacional. Fuente: NASA." },
+      },
+      {
+        heading: "Un legado poco conocido",
+        paragraphs: [
+          "La participación de médicos latinoamericanos en la historia espacial suele quedar fuera de los relatos más conocidos. La contribución de Iglesias Leal muestra cómo el conocimiento médico puede cruzar fronteras y sostener proyectos científicos de alcance global.",
+          "Interpretar una señal cardiaca puede parecer una tarea cotidiana, pero hacerlo con un registro enviado desde una nave que orbitaba la Luna representó un desafío completamente nuevo. Aquellos datos fueron, en cierto sentido, los primeros latidos humanos escuchados más allá de la Tierra.",
+        ],
+      },
+      {
+        heading: "Mirando hacia el futuro",
+        paragraphs: [
+          "Las misiones que buscan regresar a la Luna y llegar a Marte plantean desafíos médicos mayores: exposición prolongada a la microgravedad y la radiación, aislamiento y viajes de varios años.",
+          "La medicina aeroespacial seguirá desarrollando estrategias para proteger a las tripulaciones. La historia de Iglesias Leal recuerda que explorar el espacio no es sólo una hazaña tecnológica: también depende de comprender cómo responde el cuerpo humano.",
+          "Cada avance acerca la posibilidad de explorar y habitar otros mundos. El legado de aquellos primeros electrocardiogramas demuestra que, incluso a cientos de miles de kilómetros, el corazón humano sigue siendo una señal que la medicina puede escuchar y comprender.",
+        ],
+        image: { url: "/articles/archive/heart-mars-habitat.png", caption: "Simulación de hábitat en Marte para estudiar la salud y adaptación humana en misiones de larga duración." },
+      },
+    ],
+  },
+  {
+    slug: "mecanica-cuantica-en-el-espacio",
+    category: "Bitácora Espacial",
+    title: "¿Mecánica cuántica en el espacio?",
+    dek: "Cómo la computación cuántica y la inteligencia artificial podrían transformar el sector aeroespacial.",
+    author: "Cristofer Cisneros",
+    authorSlug: "cristofer-cisneros",
+    readingMinutes: 5,
+    published: "agosto 2025",
+    image: "/articles/archive/quantum-circuit-hero.png",
+    imageCaption: "Circuitos y líneas de información cuántica. Imagen de portada de la edición original.",
+    edition: "agosto-2025",
+    sourceLabel: "Publicado originalmente en Órbita No. 2 · Agosto 2025. Texto revisado a partir de las páginas 11–14 de la edición impresa.",
+    body: [
+      {
+        heading: "Contexto",
+        paragraphs: [
+          "El año 2025 fue designado por la UNESCO como el Año Internacional de la Ciencia y la Tecnología Cuántica, al cumplirse un siglo de las primeras herramientas matemáticas para explicar los fenómenos del mundo cuántico.",
+          "Desde entonces, ese conocimiento ha impulsado avances que van del LED a la miniaturización de los circuitos electrónicos. La electrónica y la mecánica cuántica también hicieron posible la computación cuántica, basada en la superposición y el entrelazamiento de partículas.",
+          "A diferencia de los bits clásicos, los qubits pueden representar una combinación de estados. La tecnología todavía es joven, pero ya se estudia para problemas de criptografía, telecomunicaciones, medicina, biología y análisis de riesgos.",
+        ],
+        image: { url: "/articles/archive/quantum-computer.png", caption: "Ordenador cuántico de IQM. Fuente: Business Wire." },
+      },
+      {
+        heading: "Computación cuántica y cohetes",
+        paragraphs: [
+          "El crecimiento del sector aeroespacial ha aumentado la necesidad de optimizar materiales, combustibles, trayectorias y procesos. Diseñar un satélite o un cohete reutilizable exige coordinar recursos materiales, humanos y económicos, con poco margen para el desperdicio.",
+          "La computación cuántica podría ayudar en grandes simulaciones y procesos de optimización. Su potencial incluye estudiar materiales de alta entropía y moléculas de combustible bajo distintas condiciones, aunque sus resultados siguen limitados por el número y la estabilidad de los qubits disponibles.",
+        ],
+        image: { url: "/articles/archive/quantum-simulations.png", caption: "Simulación de un vehículo aeroespacial. Fuente: vrx123/stock.adobe.com, vía CORDIS." },
+      },
+      {
+        heading: "IA aeroespacial",
+        paragraphs: [
+          "La inteligencia artificial ya se utiliza para resolver problemas científicos complejos y puede tener un papel en la gestión del tráfico aéreo, los riesgos, la eficiencia de los planes de vuelo y la asistencia a la operación de vehículos.",
+          "En el sector espacial, cualquier sistema autónomo debe operar con estándares rigurosos de seguridad y criterios éticos. La autonomía puede ampliar las capacidades de satélites, sondas y naves, pero no elimina la necesidad de supervisión humana.",
+        ],
+        image: { url: "/articles/archive/quantum-ai-hand.png", caption: "Representación de inteligencia artificial aplicada al diseño aeroespacial." },
+      },
+      {
+        heading: "IA y computación cuántica",
+        paragraphs: [
+          "La inteligencia artificial cuántica busca combinar el aprendizaje automático con las capacidades de cálculo y optimización de los ordenadores cuánticos. En teoría, esa combinación podría acelerar ciertos algoritmos y ayudar a explorar espacios de soluciones demasiado grandes para una computadora clásica.",
+          "El campo todavía está en una etapa temprana. Por eso conviene separar las posibilidades de investigación de las aplicaciones ya disponibles: el futuro es prometedor, pero depende de avances en hardware, control de errores y métodos verificables.",
+        ],
+        image: { url: "/articles/archive/quantum-ai-robot.png", caption: "Representación de un sistema de inteligencia artificial." },
+      },
+      {
+        heading: "Un horizonte compartido",
+        paragraphs: [
+          "La combinación de computación cuántica e inteligencia artificial podría influir en el desarrollo de materiales, combustibles, protocolos de actuación, gestión de riesgos, asistencia de vuelo y operación de satélites o estaciones espaciales.",
+          "Aún queda mucho por aprender sobre la mecánica cuántica y sus dispositivos. Si esas tecnologías maduran de forma segura y sostenible, podrían ampliar las herramientas de industrias como la biología, la medicina, la farmacología, la ciencia de datos y la exploración espacial.",
+        ],
+      },
+    ],
   },
 ];

@@ -30,6 +30,17 @@ The admin route (/admin) has operational tabs for articles, authors, editions, a
   El guardado invoca `placeArticle()` para mantener la invariante de un solo héroe.
   La guía PDF (`/docs/Guia_entrega_articulos_Orbita.pdf`) sigue disponible como referencia.
 
+- **Archivo editorial estático** - `data/articles.ts` conserva una versión de
+  respaldo de los artículos históricos recompuestos desde los PDFs de las
+  ediciones No. 9 (marzo 2026) y No. 2 (agosto 2025). Sus imágenes locales
+  viven en `public/articles/archive/heart-*.png` y
+  `public/articles/archive/quantum-*.png`. `lib/cms.ts` usa la versión
+  recompuesta completa para `cuando-el-corazon-humano-latio-desde-la-orbita-lunar`
+  y sólo corrige la portada local de `mecanica-cuantica-en-el-espacio`; la
+  ubicación en portada/feed continúa viniendo de la fila CMS. No sustituir
+  estos assets por hotlinks sin revisar derechos y pies de foto en la edición
+  original.
+
 ## Key behaviors
 
 - Published content leaves the CMS queue automatically
@@ -71,4 +82,19 @@ To regenerate: run the fpdf2 script in public/docs/gen_guide.py.
 - Newsletter remains fail-closed until both the D1 setting and
   `NEWSLETTER_ENABLED=true` are present. Email delivery runs in the separate
   scheduled Worker documented in `SITES_DEPLOY.md`.
+
+## Placement editorial y portada publica
+
+- `lib/editorial-model.ts` es la fuente pura y testeable de las invariantes de
+  ubicacion: como maximo un `hero`; `featured` y `feed` mantienen colecciones
+  independientes y ranks contiguos; mover un articulo compacta el slot origen
+  y el destino; `hidden` siempre tiene rank `0`.
+- `lib/editorial.ts` aplica el modelo a D1 con un batch y solo persiste filas
+  que cambiaron. `archiveArticle()` incluye estado, slot y compactacion en esa
+  misma operacion.
+- `app/page.tsx` renderiza explicitamente todos los articulos `featured` y
+  excluye el `hero`; solo usa los primeros tres articulos publicos como
+  fallback cuando no hay destacados configurados.
+- La prueba focalizada es `npm run test:editorial` y también forma parte de
+  `npm test`.
 

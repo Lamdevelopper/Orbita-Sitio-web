@@ -13,13 +13,38 @@ function sortManaged(items: CmsArticle[]) {
   );
 }
 
+/**
+ * Choose a hero deterministically when the CMS has no explicit hero. A
+ * configured featured/feed rank wins over static archive order; the slug is a
+ * stable final tie-breaker for malformed or duplicate ranks.
+ */
+function fallbackHero(managed: CmsArticle[], legacy: typeof staticArticles) {
+  const managedCandidate = [...managed]
+    .filter((article) => article.homepageSlot !== "hero" && article.homepageSlot !== "hidden")
+    .sort((a, b) =>
+      (slotWeight[a.homepageSlot] ?? 9) - (slotWeight[b.homepageSlot] ?? 9)
+      || a.homepageRank - b.homepageRank
+      || a.slug.localeCompare(b.slug),
+    )[0];
+  if (managedCandidate) return managedCandidate;
+
+  return [...legacy]
+    .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || a.slug.localeCompare(b.slug))[0];
+}
+
 export default async function Home() {
   const snapshot = await cmsSnapshot();
   const managed = sortManaged(snapshot.articles.filter((article) => article.homepageSlot !== "hidden"));
   const legacyFallback = staticArticles.filter((article) => !snapshot.managedSlugs.has(article.slug));
   const publicArticles = [...managed, ...legacyFallback];
-  const hero = managed.find((article) => article.homepageSlot === "hero") ?? publicArticles[0];
-  const rest = publicArticles.filter((article) => article.slug !== hero?.slug);
+  const hero = managed.find((article) => article.homepageSlot === "hero") ?? fallbackHero(managed, legacyFallback);
+  // Featured is its own homepage collection.  Do not derive the strip from a
+  // mixed hero/featured/feed list: doing so can hide configured featured
+  // stories whenever the hero or feed order changes.
+  const configuredFeatured = managed.filter((article) => article.homepageSlot === "featured" && article.slug !== hero?.slug);
+  const featured = configuredFeatured.length
+    ? configuredFeatured
+    : publicArticles.filter((article) => article.slug !== hero?.slug).slice(0, 3);
   const current = (await getEditions())[0] ?? null;
   const currentStories = current
     ? publicArticles.filter((article) => current.articleSlugs.includes(article.slug))
@@ -32,7 +57,7 @@ export default async function Home() {
       <div className="hero-copy"><span className="eyebrow">{hero.category} · HISTORIA DE PORTADA</span><h1>{hero.title}</h1><p>{hero.dek}</p><div className="byline">Por {hero.author} <span>·</span> {hero.readingMinutes} min</div><Link className="arrow-link" href={`/articulos/${hero.slug}`}>Leer la historia <span>→</span></Link></div>
     </section> : <section className="page-shell listing-intro"><span className="eyebrow">ARCHIVO EDITORIAL</span><h1>La próxima historia está en preparación.</h1></section>}
 
-    <section className="story-strip page-shell">{rest.slice(0, 3).map((article, index) => <article className="story-card" key={article.slug}><Link href={`/articulos/${article.slug}`}><div className="story-image"><img src={article.image} alt={article.imageCaption ?? article.title} /><span>0{index + 1}</span></div><span className="eyebrow">{article.category}</span><h2>{article.title}</h2><p>{article.dek}</p><div className="byline">{article.author} · {article.readingMinutes} min</div></Link></article>)}</section>
+    <section className="story-strip page-shell">{featured.map((article, index) => <article className="story-card" key={article.slug}><Link href={`/articulos/${article.slug}`}><div className="story-image"><img src={article.image} alt={article.imageCaption ?? article.title} /><span>{String(index + 1).padStart(2, "0")}</span></div><span className="eyebrow">{article.category}</span><h2>{article.title}</h2><p>{article.dek}</p><div className="byline">{article.author} · {article.readingMinutes} min</div></Link></article>)}</section>
 
     {current ? <section className="edition-feature"><div className="page-shell edition-grid">{current.coverImage ? <div className="edition-feature-cover"><img src={current.coverImage} alt={`Portada de Órbita ${current.number}, ${current.title}`} /></div> : <div className={`cover cover-${current.color}`}><span>ÓRBITA</span><strong>{current.number}</strong><div className="cover-orbit"></div><h2>{current.title}</h2><small>REVISTA DE DIVULGACIÓN CIENTÍFICA</small></div>}<div className="edition-copy"><span className="eyebrow light">EDICIÓN ACTUAL / {current.year}</span><h2>{current.title}</h2><p>{current.summary}</p><div className="edition-stats"><div><strong>{current.articleSlugs.length}</strong><span>historia web</span></div><div><strong>{currentMinutes}</strong><span>min de lectura</span></div><div><strong>{current.number}</strong><span>número</span></div></div><Link className="button light-button" href={`/ediciones/${current.slug}`}>Explorar la edición →</Link></div></div></section> : null}
 

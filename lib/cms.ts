@@ -2,6 +2,13 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { articles as articleTable, authors, editions as editionTable } from "../db/schema";
 import type { Article, Edition } from "./content";
+import { articles as staticArticles } from "../data/articles";
+import { EDITORIAL_LOCALE } from "./editorial-contract";
+
+// El artículo del corazón llegó desde columnas de PDF y su cuerpo histórico
+// quedó guardado con un salto de línea por fragmento. La reparación vive aquí
+// para corregir también el CMS publicado, sin una migración destructiva.
+const repairedEditorialSlugs = new Set(["cuando-el-corazon-humano-latio-desde-la-orbita-lunar"]);
 
 function sections(body: string, imageMap?: Map<string, { url: string; caption?: string }>) {
   const output: Article["body"] = [];
@@ -39,43 +46,93 @@ function sections(body: string, imageMap?: Map<string, { url: string; caption?: 
 }
 
 function formatDate(value: Date | null) {
-  return value ? new Intl.DateTimeFormat("es-MX", { month: "long", year: "numeric" }).format(value) : "recién publicado";
+  return value ? new Intl.DateTimeFormat(EDITORIAL_LOCALE, { month: "long", year: "numeric" }).format(value) : "recién publicado";
 }
 
-export type CmsArticle = Article & { homepageSlot: string; homepageRank: number };
+export type CmsArticle = Article & {
+  homepageSlot: string;
+  homepageRank: number;
+  /** Optional SEO overrides entered in the CMS article form. */
+  seoTitle?: string;
+  seoDescription?: string;
+};
 export type CmsSnapshot = { articles: CmsArticle[]; managedSlugs: Set<string> };
 
-function mapArticle(row: typeof articleTable.$inferSelect, author: string, editionSlug?: string | null): CmsArticle {
-  return {
+// A CMS article can be published before its editor has uploaded a hero image.
+// Keep the card valid with the neutral site OG artwork instead of borrowing a
+// different article's portrait (which made unrelated stories look authored by
+// Jorge Ferrer).
+const DEFAULT_CMS_IMAGE = "/og.png";
+
+function mapArticle(
+  row: typeof articleTable.$inferSelect,
+  authorName: string | null,
+  authorSlug: string | null,
+  editionSlug?: string | null,
+): CmsArticle {
+  const repaired = repairedEditorialSlugs.has(row.slug)
+    ? staticArticles.find((article) => article.slug === row.slug)
+    : undefined;
+  if (repaired) {
+    return {
+      ...repaired,
+      // Preserve the reconstructed body/imagery, but use the current CMS
+      // relationship when it is available so author links remain accurate.
+      author: authorName || repaired.author,
+      authorSlug: authorSlug || repaired.authorSlug,
+      // La ubicación editorial sigue siendo responsabilidad del CMS; el resto
+      // del contenido se toma de la versión recompuesta y autocontenida.
+      edition: editionSlug || repaired.edition,
+      seoTitle: row.seoTitle || undefined,
+      seoDescription: row.seoDescription || undefined,
+      homepageSlot: row.homepageSlot,
+      homepageRank: row.homepageRank,
+    };
+  }
+  const mapped: CmsArticle = {
     slug: row.slug,
     category: row.category,
     title: row.title,
     dek: row.dek,
-    author,
-    authorSlug: "",
+    author: authorName || "Equipo Órbita",
+    // `authors.slug` is selected in the join below; an empty slug means the
+    // article has no resolvable author page and is rendered as plain text.
+    authorSlug: authorSlug || "",
     readingMinutes: row.readingMinutes,
     published: formatDate(row.publishedAt),
-    image: row.heroUrl || "/articles/archive/jorge-ferrer.webp",
+    image: row.heroUrl || DEFAULT_CMS_IMAGE,
     imageCaption: row.heroCaption || undefined,
-    edition: editionSlug || "en-preparacion",
+    // No linked edition is represented by an empty slug.  The old
+    // `en-preparacion` value looked like a real route and produced broken
+    // edition links on published CMS articles.
+    edition: editionSlug || "",
+    seoTitle: row.seoTitle || undefined,
+    seoDescription: row.seoDescription || undefined,
     body: sections(row.body, row.images.length > 0
       ? new Map(row.images.map((img) => [img.ref, { url: img.url, caption: img.caption }]))
       : undefined),
     homepageSlot: row.homepageSlot,
     homepageRank: row.homepageRank,
   };
+  // La portada cuántica ya es correcta en el CMS, pero se sirve desde el
+  // asset local en el fallback para que no dependa de un hotlink de R2.
+  if (row.slug === "mecanica-cuantica-en-el-espacio") {
+    const cover = staticArticles.find((article) => article.slug === row.slug);
+    if (cover) return { ...mapped, image: cover.image, imageCaption: cover.imageCaption };
+  }
+  return mapped;
 }
 
 export async function cmsSnapshot(): Promise<CmsSnapshot> {
   try {
-    const rows = await getDb().select({ article: articleTable, author: authors.name, editionSlug: editionTable.slug })
+    const rows = await getDb().select({ article: articleTable, author: authors.name, authorSlug: authors.slug, editionSlug: editionTable.slug })
       .from(articleTable).leftJoin(authors, eq(articleTable.authorId, authors.id))
       .leftJoin(editionTable, eq(articleTable.editionId, editionTable.id))
       .orderBy(desc(articleTable.publishedAt));
     return {
       articles: rows
         .filter((row) => row.article.status === "published")
-        .map((row) => mapArticle(row.article, row.author || "Equipo Órbita", row.editionSlug)),
+        .map((row) => mapArticle(row.article, row.author, row.authorSlug, row.editionSlug)),
       managedSlugs: new Set(rows.map((row) => row.article.slug)),
     };
   } catch { return { articles: [], managedSlugs: new Set<string>() }; }
@@ -87,23 +144,27 @@ export async function cmsArticles() {
 
 export async function cmsArticle(slug: string) {
   try {
-    const [row] = await getDb().select({ article: articleTable, author: authors.name, editionSlug: editionTable.slug })
+    const [row] = await getDb().select({ article: articleTable, author: authors.name, authorSlug: authors.slug, editionSlug: editionTable.slug })
       .from(articleTable).leftJoin(authors, eq(articleTable.authorId, authors.id))
       .leftJoin(editionTable, eq(articleTable.editionId, editionTable.id))
       .where(and(eq(articleTable.slug, slug), eq(articleTable.status, "published"))).limit(1);
-    return row ? mapArticle(row.article, row.author || "Equipo Órbita", row.editionSlug) : null;
+    return row ? mapArticle(row.article, row.author, row.authorSlug, row.editionSlug) : null;
   } catch { return null; }
 }
 
-function mapEdition(row: typeof editionTable.$inferSelect): Edition {
+function mapEdition(row: typeof editionTable.$inferSelect, articleSlugs: string[] = []): Edition {
+  // Keep generated covers visually varied while deriving the value from the
+  // edition number (rather than making every CMS edition blue).
+  const number = Math.abs(row.number);
+  const color = number % 3 === 0 ? "blue" : number % 3 === 1 ? "ink" : "red";
   return {
     slug: row.slug,
     number: String(row.number),
-    year: new Intl.DateTimeFormat("es-MX", { year: "numeric" }).format(row.publishedAt),
+    year: row.publishedAt ? new Intl.DateTimeFormat(EDITORIAL_LOCALE, { year: "numeric" }).format(row.publishedAt) : "—",
     title: row.title,
     summary: row.summary || "Una edición de la revista Órbita.",
-    color: "blue",
-    articleSlugs: [],
+    color,
+    articleSlugs,
     coverImage: row.coverUrl || undefined,
     externalUrl: row.pdfUrl || row.externalUrl || undefined,
   };
@@ -111,17 +172,38 @@ function mapEdition(row: typeof editionTable.$inferSelect): Edition {
 
 export async function cmsEditions() {
   try {
-    return (await getDb().select().from(editionTable)
-      .orderBy(desc(editionTable.isCurrent), desc(editionTable.number)))
-      .map(mapEdition);
+    const db = getDb();
+    // Fetch all relations in one additional query, avoiding an N+1 query per
+    // edition while keeping articleSlugs limited to published web stories.
+    const [editionRows, articleRows] = await Promise.all([
+      db.select().from(editionTable).orderBy(desc(editionTable.isCurrent), desc(editionTable.number)),
+      db.select({ slug: articleTable.slug, editionId: articleTable.editionId })
+        .from(articleTable)
+        .where(eq(articleTable.status, "published"))
+        .orderBy(desc(articleTable.publishedAt), desc(articleTable.id)),
+    ]);
+    const slugsByEdition = new Map<number, string[]>();
+    for (const article of articleRows) {
+      if (article.editionId === null) continue;
+      const slugs = slugsByEdition.get(article.editionId) ?? [];
+      slugs.push(article.slug);
+      slugsByEdition.set(article.editionId, slugs);
+    }
+    return editionRows.map((edition) => mapEdition(edition, slugsByEdition.get(edition.id) ?? []));
   }
   catch { return [] as Edition[]; }
 }
 
 export async function cmsEdition(slug: string) {
   try {
-    const [row] = await getDb().select().from(editionTable).where(eq(editionTable.slug, slug)).limit(1);
-    return row ? mapEdition(row) : null;
+    const db = getDb();
+    const [row] = await db.select().from(editionTable).where(eq(editionTable.slug, slug)).limit(1);
+    if (!row) return null;
+    const articleRows = await db.select({ slug: articleTable.slug })
+      .from(articleTable)
+      .where(and(eq(articleTable.editionId, row.id), eq(articleTable.status, "published")))
+      .orderBy(desc(articleTable.publishedAt), desc(articleTable.id));
+    return mapEdition(row, articleRows.map((article) => article.slug));
   } catch { return null; }
 }
 

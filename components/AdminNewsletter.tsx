@@ -6,6 +6,7 @@ import {
   Settings2, ShieldCheck, Trash2, UserRound, X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatDateTime } from "./admin/formatters";
 
 type Block =
   | { type: "paragraph" | "heading" | "quote"; text: string; level?: 1 | 2 | 3 }
@@ -40,8 +41,7 @@ function contentEmpty(c: Content) { return !c.subject.trim() && !c.preheader.tri
 const statusLabel: Record<Subscriber["status"], string> = { pending: "Pendiente", active: "Activo", unsubscribed: "Suprimido", bounced: "Rebotado", needs_reconfirmation: "Debe reconfirmar" };
 
 function formatDate(value?: string | null) {
-  if (!value) return "Sin fecha";
-  return new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Mexico_City" }).format(new Date(value));
+  return formatDateTime(value).replace("Sin cambios registrados", "Sin fecha");
 }
 
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {

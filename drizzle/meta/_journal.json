@@ -29,6 +29,13 @@
       "when": 1753392000000,
       "tag": "0003_add_images_to_articles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787097600000,
+      "tag": "0006_editorial_locks",
+      "breakpoints": true
     }
   ]
 }

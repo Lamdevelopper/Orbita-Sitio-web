@@ -11,20 +11,41 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const article = staticArticles.find((item) => item.slug === slug);
-  return article
-    ? { title: article.title, description: article.dek, openGraph: { title: article.title, description: article.dek, images: [article.image], type: "article" } }
-    : { title: "Artículo" };
+  // Resolve through the resilient CMS facade so published CMS stories do not
+  // fall back to a generic title or stale static Open Graph image.
+  const article = await getArticle(slug);
+  if (!article) return { title: "Artículo no encontrado" };
+  const seoTitle = "seoTitle" in article && article.seoTitle?.trim() ? article.seoTitle : article.title;
+  const seoDescription = "seoDescription" in article && article.seoDescription?.trim()
+    ? article.seoDescription
+    : article.dek;
+  return {
+    title: seoTitle,
+    description: seoDescription,
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      images: [{ url: article.image, alt: article.imageCaption ?? article.title }],
+      type: "article",
+    },
+  };
 }
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const article = await getArticle(slug) ?? staticArticles.find((item) => item.slug === slug);
+  const article = await getArticle(slug);
   if (!article) notFound();
 
-  const allArticles=[...(await getArticles()),...staticArticles];const sameEdition = allArticles.filter((item) => item.slug !== article.slug && item.edition === article.edition);
+  const allArticles=[...(await getArticles()),...staticArticles];
+  // An empty edition is unknown, not a shared bucket; only use edition
+  // affinity for stories with a real linked edition slug.
+  const sameEdition = article.edition
+    ? allArticles.filter((item) => item.slug !== article.slug && item.edition === article.edition)
+    : [];
   const related = [...sameEdition, ...allArticles.filter((item) => item.slug !== article.slug && item.edition !== article.edition)].filter((item,index,list)=>list.findIndex(candidate=>candidate.slug===item.slug)===index).slice(0, 2);
-  const hasEditionPage = article.edition !== "en-preparacion";
+  // Empty edition slugs mean the CMS row has no linked edition.  Do not
+  // render a link to `/ediciones/` or the old placeholder route in that case.
+  const hasEditionPage = Boolean(article.edition && article.edition !== "en-preparacion");
 
   return (
     <article className="article-page" data-article-slug={article.slug}>
@@ -34,7 +55,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <p>{article.dek}</p>
         <div className="article-header-meta">
           <div>
-            Por <Link href={`/autores#${article.authorSlug}`}>{article.author}</Link>
+            Por {article.authorSlug ? <Link href={`/autores#${article.authorSlug}`}>{article.author}</Link> : article.author}
             <br />
             <span>{article.published} · {article.readingMinutes} min de lectura</span>
           </div>
