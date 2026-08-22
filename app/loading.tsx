@@ -1,6 +1,7 @@
 export default function Loading() {
   return (
-    <div className="page-shell" style={{ paddingBlock: 100 }}>
+    <div className="page-shell" style={{ paddingBlock: 100 }} role="status" aria-busy="true">
+      <span className="sr-only">Cargando la portada…</span>
       {/* Hero skeleton */}
       <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", minHeight: 650, borderLeft: "1px solid var(--orbita-line)", borderRight: "1px solid var(--orbita-line)" }}>
         <div style={{ background: "#eef1f6" }} />

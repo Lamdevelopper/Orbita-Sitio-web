@@ -51,12 +51,20 @@ export function NewsletterForm() {
   return (
     <form onSubmit={submit}>
       <label className="sr-only" htmlFor="email">Correo electrónico</label>
-      <input name="email" id="email" type="email" placeholder="tu@correo.mx" required />
+      <input
+        name="email"
+        id="email"
+        type="email"
+        autoComplete="email"
+        placeholder="tu@correo.mx"
+        required
+        aria-describedby={state === "error" ? "newsletter-error" : undefined}
+      />
       <Button type="submit" size="lg" disabled={state === "saving"}>
-        {state === "saving" ? "Guardando…" : "Quiero recibirla →"}
+        {state === "saving" ? "Guardando…" : <><span>Quiero recibirla</span> <span aria-hidden="true">→</span></>}
       </Button>
       {state === "error" && (
-        <small>No pudimos guardar tu correo. Intenta otra vez.</small>
+        <small id="newsletter-error" role="alert">No pudimos guardar tu correo. Intenta otra vez.</small>
       )}
     </form>
   );

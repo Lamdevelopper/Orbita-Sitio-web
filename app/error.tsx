@@ -16,7 +16,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     <div className="page-shell listing-page" style={{ textAlign: "center", paddingBlock: 140 }}>
       <span className="eyebrow">ERROR INESPERADO</span>
       <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(3rem, 5vw, 5rem)", fontWeight: 500, lineHeight: ".93", margin: "24px 0" }}>
-        Algo salio mal.
+        Algo salió mal.
       </h1>
       <p style={{ fontSize: "1.16rem", lineHeight: 1.7, maxWidth: 680, marginInline: "auto", color: "#5b6069" }}>
         El equipo editorial ya fue notificado. Mientras tanto, puedes intentar de nuevo.

@@ -1,6 +1,7 @@
 export default function Loading() {
   return (
-    <div className="page-shell" style={{ paddingBlock: 100 }}>
+    <div className="page-shell" style={{ paddingBlock: 100 }} role="status" aria-busy="true">
+      <span className="sr-only">Cargando el artículo…</span>
       <div style={{ width: 120, height: 12, background: "#e0e4ed", borderRadius: 4, marginBottom: 24 }} />
       <div style={{ width: "70%", height: 64, background: "#e8ebf0", borderRadius: 4, marginBottom: 12 }} />
       <div style={{ width: "50%", height: 24, background: "#eef1f6", borderRadius: 4, marginBottom: 50 }} />

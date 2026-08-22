@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { getAnalyticsEmails } from "../../../lib/api";
 import { staticArticles } from "../../../lib/content";
+import { cmsSnapshot } from "../../../lib/cms";
 import { EDITORIAL_LOCALE, EDITORIAL_TIMEZONE, PAGINATION_LIMITS } from "../../../lib/editorial-contract";
 import { chatGPTSignOutPath, requireChatGPTUser } from "../../chatgpt-auth";
 
@@ -50,11 +51,6 @@ function percent(value: number, total: number) {
   return `${Math.round((value / total) * 100)}%`;
 }
 
-function articleTitle(slug: string | null) {
-  if (!slug) return "Sitio general";
-  return staticArticles.find((article) => article.slug === slug)?.title ?? slug;
-}
-
 export default async function AnalyticsDashboard({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requireChatGPTUser("/admin/analytics");
   if (!getAnalyticsEmails().includes(user.email.toLowerCase())) {
@@ -80,6 +76,18 @@ export default async function AnalyticsDashboard({ searchParams }: { searchParam
     AND (${articleOptional} = 1 OR article_slug = ${selectedArticle})
     AND (${eventOptional} = 1 OR event_name = ${selectedEvent})`;
   const db = getDb();
+
+  // Resolver titulos igual que el sitio publico: el mapeo del CMS gana (los
+  // slugs reparados ya traen su titulo estatico reconstruido) y el archivo
+  // estatico cubre slugs archivados que ya no estan publicados.
+  const snapshot = await cmsSnapshot();
+  const titleBySlug = new Map<string, string>();
+  for (const article of staticArticles) titleBySlug.set(article.slug, article.title);
+  for (const article of snapshot.articles) titleBySlug.set(article.slug, article.title);
+  function articleTitle(slug: string | null) {
+    if (!slug) return "Sitio general";
+    return titleBySlug.get(slug) ?? slug;
+  }
 
   const [totalsRows, dailyRows, articleRows, sourceRows, eventRows, articleOptions, eventOptions, returningRows, secondStoryRows] = await Promise.all([
     db.all(sql<TotalsRow>`SELECT

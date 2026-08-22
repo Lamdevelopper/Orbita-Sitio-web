@@ -5,9 +5,9 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
     <html lang="es">
       <body style={{ margin: 0, fontFamily: "Georgia, serif", background: "#fdfdfd", color: "#020202", display: "grid", placeItems: "center", minHeight: "100vh", padding: 32, textAlign: "center" }}>
         <div>
-          <h1 style={{ fontSize: "3rem", fontWeight: 500, margin: 0 }}>Orbita</h1>
+          <h1 style={{ fontSize: "3rem", fontWeight: 500, margin: 0 }}>Órbita</h1>
           <p style={{ fontSize: "1.1rem", color: "#5b6069", maxWidth: 500, margin: "24px auto" }}>
-            Un error critico impide cargar la pagina. Intenta recargar.
+            Un error crítico impide cargar la página. Intenta recargar.
           </p>
           <button
             onClick={reset}

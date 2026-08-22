@@ -17,7 +17,7 @@ test("ships the Orbita Aerospace AAFI editorial surface", async () => {
     readFile(new URL("../app/articulos/[slug]/page.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(home, /NewsletterForm/);
-  assert.match(contentModule, /import \{ cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot \} from "\.\/cms"/);
+  assert.match(contentModule, /import \{ cmsArticle, cmsArticles, cmsAuthors, cmsEditions, cmsEdition, cmsSnapshot \} from "\.\/cms"/);
   assert.match(home, /const current = \(await getEditions\(\)\)\[0\] \?\? null/);
   assert.match(home, /current \? <section className="edition-feature"/);
   assert.match(content, /México construye su futuro espacial/i);

@@ -1,6 +1,8 @@
-const teamProfile = (slug: string, name: string) => ({ slug, name, area: "Equipo de Divulgación · Aerospace AAFI", bio: "Integrante del equipo de Divulgación AAFI Aerospace y de la comunidad editorial de Órbita." });
+import type { Author } from "../lib/content";
 
-export const authors = [
+const teamProfile = (slug: string, name: string): Author => ({ slug, name, area: "Equipo de Divulgación · Aerospace AAFI", bio: "Integrante del equipo de Divulgación AAFI Aerospace y de la comunidad editorial de Órbita." });
+
+export const authors: Author[] = [
   teamProfile("matias-lamoyi", "Matías Lamoyi"),
   teamProfile("aram-salvador-cuevas-perez", "Aram Salvador Cuevas Pérez"),
   teamProfile("valentina-gonzalez-mendez", "Valentina González Méndez"),

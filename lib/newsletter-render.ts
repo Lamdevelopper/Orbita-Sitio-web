@@ -1,4 +1,5 @@
 import type { NewsletterBlock, NewsletterContent } from "./newsletter-model";
+import { SITE_CONTACT } from "./site-config";
 
 export type RenderedNewsletter = { html: string; text: string };
 export type NewsletterFooter = {
@@ -16,7 +17,7 @@ export function escapeNewsletterHtml(value: string): string {
 function safeUrl(value: string): string {
   if (value === UNSUBSCRIBE_PLACEHOLDER) return value;
   try {
-    const url = new URL(value, "https://orbitadivulgacion.com");
+    const url = new URL(value, SITE_CONTACT.siteUrl);
     if (url.protocol !== "https:" && url.protocol !== "http:") return "#";
     return escapeNewsletterHtml(url.toString());
   } catch { return "#"; }
