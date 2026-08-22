@@ -1,5 +1,5 @@
 import type { NewsletterBlock, NewsletterContent } from "./newsletter-model";
-import { SITE_CONTACT } from "./site-config";
+import { SITE_CONTACT } from "./site-config.ts";
 
 export type RenderedNewsletter = { html: string; text: string };
 export type NewsletterFooter = {
