@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { SITE_CONTACT } from "../../lib/site-config";
 
-export const metadata: Metadata = { title: "Acerca de Órbita" };
+export const metadata: Metadata = { title: "Acerca de Órbita", alternates: { canonical: "/acerca" } };
 
-const instagramUrl = "https://www.instagram.com/aerospaceaafi/";
+const instagramUrl = SITE_CONTACT.instagramUrl;
 
 export default function About() {
   return (
@@ -22,9 +23,9 @@ export default function About() {
               className="button-like about-social"
               href={instagramUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
-              Sigue a Aerospace AAFI en Instagram ↗
+              Sigue a Aerospace AAFI en Instagram <span aria-hidden="true">↗</span><span className="sr-only">(se abre en una pestaña nueva)</span>
             </a>
           </div>
 

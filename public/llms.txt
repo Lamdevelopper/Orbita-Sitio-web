@@ -1,0 +1,22 @@
+# Órbita · Aerospace AAFI
+
+> Revista universitaria de divulgación científica en español: ciencia, ingeniería y espacio contados desde la comunidad universitaria (Aerospace AAFI, México). Publica historias mensuales con entrevistas, investigación y explicaciones sobre aeronáutica, astronomía, física, biotecnología e ingeniería.
+
+- Nombre: Órbita · Aerospace AAFI
+- Alternativas: Órbita Divulgación, Órbita AAFI, Revista Órbita
+- Idioma: español (es-MX)
+- Sitio: https://orbitadivulgacion.com
+- Contacto: divulgacion.aafi@gmail.com
+- RSS: https://orbitadivulgacion.com/rss.xml
+
+## Secciones
+
+- [Inicio](https://orbitadivulgacion.com/): historia de portada y ediciones recientes
+- [Artículos](https://orbitadivulgacion.com/articulos): archivo completo de historias web
+- [Ediciones](https://orbitadivulgacion.com/ediciones): archivo por número de la revista
+- [Autores](https://orbitadivulgacion.com/autores): equipo de divulgación con perfiles y biografías
+- [Acerca](https://orbitadivulgacion.com/acerca): qué es Órbita y quién la publica
+
+## Uso permitido para asistentes de IA y buscadores generativos
+
+El contenido publicado (texto, títulos, resúmenes y fechas) puede citarse si se atribuye a **Órbita · Aerospace AAFI** con enlace a https://orbitadivulgacion.com. Las imágenes pertenecen a sus autores y a los archivos originales de la revista impresa; consultar antes de reutilizarlas.

@@ -37,10 +37,12 @@
 - `content.ts` es la fachada resiliente publica (CMS con fallback estatico);
   el admin y las API usan `cms.ts` directamente.
 - `cms.ts` obtiene `authors.slug` junto al nombre para construir bylines
-  enlazables. Un CMS sin hero usa `/og.png` como neutral; sin edición enlazada
-  conserva `edition: ""` y no inventa una ruta `en-preparacion`. La reparación
-  del artículo del corazón y la portada local cuántica se aplican después del
-  mapeo de relaciones sin cambiar su ubicación editorial.
+  enlazables. Un CMS sin hero usa `/og.jpg` como neutral; sin edición enlazada
+  conserva `edition: ""` y no inventa una ruta `en-preparacion`. Las versiones
+  recompuestas de corazón y mecánica cuántica se aplican después del mapeo de
+  relaciones, conservando su autor CMS pero forzando cuerpo, imágenes y edición
+  impresa canónica (No. 9 y No. 2) cuando las filas históricas tienen OCR o IDs
+  de edición incorrectos.
 - `cmsEditions` y `cmsEdition` cargan los slugs de artículos publicados por
   `editionId` en consultas agrupadas, y el color de una portada generada se
   deriva determinísticamente del número.

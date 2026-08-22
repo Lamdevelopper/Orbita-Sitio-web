@@ -1,14 +1,18 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { articles as articleTable, authors, editions as editionTable } from "../db/schema";
-import type { Article, Edition } from "./content";
+import type { Article, Edition, Author } from "./content";
 import { articles as staticArticles } from "../data/articles";
 import { EDITORIAL_LOCALE } from "./editorial-contract";
 
-// El artículo del corazón llegó desde columnas de PDF y su cuerpo histórico
-// quedó guardado con un salto de línea por fragmento. La reparación vive aquí
-// para corregir también el CMS publicado, sin una migración destructiva.
-const repairedEditorialSlugs = new Set(["cuando-el-corazon-humano-latio-desde-la-orbita-lunar"]);
+// Estas dos piezas históricas llegaron del PDF con OCR de columnas y relaciones
+// de portada/edición incorrectas. La versión recompuesta es la fuente pública
+// estable hasta que el CMS pueda corregir las filas originales sin perder sus
+// imágenes. Mantener la lista aquí evita depender de IDs de D1 que cambiaron.
+const repairedEditorialSlugs = new Set([
+  "cuando-el-corazon-humano-latio-desde-la-orbita-lunar",
+  "mecanica-cuantica-en-el-espacio",
+]);
 
 function sections(body: string, imageMap?: Map<string, { url: string; caption?: string }>) {
   const output: Article["body"] = [];
@@ -62,7 +66,7 @@ export type CmsSnapshot = { articles: CmsArticle[]; managedSlugs: Set<string> };
 // Keep the card valid with the neutral site OG artwork instead of borrowing a
 // different article's portrait (which made unrelated stories look authored by
 // Jorge Ferrer).
-const DEFAULT_CMS_IMAGE = "/og.png";
+const DEFAULT_CMS_IMAGE = "/og.jpg";
 
 function mapArticle(
   row: typeof articleTable.$inferSelect,
@@ -76,17 +80,17 @@ function mapArticle(
   if (repaired) {
     return {
       ...repaired,
-      // Preserve the reconstructed body/imagery, but use the current CMS
-      // relationship when it is available so author links remain accurate.
+      // Preserve the reconstructed body/imagery and canonical print edition;
+      // only the author relationship may safely come from the CMS row.
       author: authorName || repaired.author,
       authorSlug: authorSlug || repaired.authorSlug,
-      // La ubicación editorial sigue siendo responsabilidad del CMS; el resto
-      // del contenido se toma de la versión recompuesta y autocontenida.
-      edition: editionSlug || repaired.edition,
+      edition: repaired.edition,
       seoTitle: row.seoTitle || undefined,
       seoDescription: row.seoDescription || undefined,
       homepageSlot: row.homepageSlot,
       homepageRank: row.homepageRank,
+      // La fecha CMS manda aunque el cuerpo venga del archivo reconstruido.
+      publishedAt: row.publishedAt ? row.publishedAt.toISOString() : undefined,
     };
   }
   const mapped: CmsArticle = {
@@ -100,6 +104,7 @@ function mapArticle(
     authorSlug: authorSlug || "",
     readingMinutes: row.readingMinutes,
     published: formatDate(row.publishedAt),
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : undefined,
     image: row.heroUrl || DEFAULT_CMS_IMAGE,
     imageCaption: row.heroCaption || undefined,
     // No linked edition is represented by an empty slug.  The old
@@ -114,12 +119,6 @@ function mapArticle(
     homepageSlot: row.homepageSlot,
     homepageRank: row.homepageRank,
   };
-  // La portada cuántica ya es correcta en el CMS, pero se sirve desde el
-  // asset local en el fallback para que no dependa de un hotlink de R2.
-  if (row.slug === "mecanica-cuantica-en-el-espacio") {
-    const cover = staticArticles.find((article) => article.slug === row.slug);
-    if (cover) return { ...mapped, image: cover.image, imageCaption: cover.imageCaption };
-  }
   return mapped;
 }
 
@@ -167,6 +166,7 @@ function mapEdition(row: typeof editionTable.$inferSelect, articleSlugs: string[
     articleSlugs,
     coverImage: row.coverUrl || undefined,
     externalUrl: row.pdfUrl || row.externalUrl || undefined,
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : undefined,
   };
 }
 
@@ -205,5 +205,24 @@ export async function cmsEdition(slug: string) {
       .orderBy(desc(articleTable.publishedAt), desc(articleTable.id));
     return mapEdition(row, articleRows.map((article) => article.slug));
   } catch { return null; }
+}
+
+export async function cmsAuthors(): Promise<Author[]> {
+  try {
+    const rows = await getDb().select({
+      slug: authors.slug,
+      name: authors.name,
+      area: authors.area,
+      bio: authors.bio,
+      avatarUrl: authors.avatarUrl,
+      articleCount: sql<number>`count(${articleTable.id})`,
+    })
+      .from(authors)
+      .leftJoin(articleTable, and(eq(articleTable.authorId, authors.id), ne(articleTable.status, "archived")))
+      .groupBy(authors.id)
+      .orderBy(asc(authors.name));
+    return rows.map((row) => ({ ...row, articleCount: Number(row.articleCount) }));
+  }
+  catch { return [] as Author[]; }
 }
 

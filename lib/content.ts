@@ -7,6 +7,8 @@ export type Article = {
   authorSlug: string;
   readingMinutes: number;
   published: string;
+  /** Fecha de publicacion real del CMS en ISO; ausente en el archivo estatico. */
+  publishedAt?: string;
   image: string;
   imageCaption?: string;
   edition: string;
@@ -25,6 +27,8 @@ export type Edition = {
   articleSlugs: string[];
   externalUrl?: string;
   coverImage?: string;
+  /** Fecha de publicacion real del CMS en ISO; ausente en ediciones estaticas. */
+  publishedAt?: string;
 };
 
 export type Author = {
@@ -37,8 +41,8 @@ export type Author = {
 };
 
 // Import locally for the resilient helpers below, then expose the same API.
-import { cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot } from "./cms";
-export { cmsArticle, cmsArticles, cmsEditions, cmsEdition, cmsSnapshot };
+import { cmsArticle, cmsArticles, cmsAuthors, cmsEditions, cmsEdition, cmsSnapshot } from "./cms";
+export { cmsArticle, cmsArticles, cmsAuthors, cmsEditions, cmsEdition, cmsSnapshot };
 export type { CmsArticle, CmsSnapshot } from "./cms";
 
 // Static data (kept in separate files to avoid bloating the main bundle)
@@ -78,6 +82,11 @@ export async function getEdition(slug: string) {
   catch (error) { logError("getEdition", error); return _staticEditions.find(e => e.slug === slug) ?? null; }
 }
 
-export function getAuthors() {
-  return _staticAuthors;
+/** Autores: CMS primero, fallback al roster estatico si la DB no responde o esta vacia. */
+export async function getAuthors() {
+  try {
+    const managed = await cmsAuthors();
+    return managed.length ? managed : _staticAuthors;
+  }
+  catch (error) { logError("getAuthors", error); return _staticAuthors; }
 }

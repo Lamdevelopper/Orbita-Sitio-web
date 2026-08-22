@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getEditions } from "../../lib/content";
 
-export const metadata: Metadata = { title: "Ediciones", description: "El archivo completo de la revista Órbita." };
+export const metadata: Metadata = { title: "Ediciones", description: "El archivo completo de la revista Órbita.", alternates: { canonical: "/ediciones" } };
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +23,13 @@ export default async function EditionsPage() {
                 <img src={edition.coverImage} alt={`Portada de Órbita ${edition.number}, ${edition.title}`} />
               </div>
             ) : (
-              <div className={`cover cover-${edition.color}`}><span>ÓRBITA</span><strong>{edition.number}</strong><div className="cover-orbit" /><h2>{edition.title}</h2><small>REVISTA DE DIVULGACIÓN CIENTÍFICA</small></div>
+              <div className={`cover cover-${edition.color}`}><span>ÓRBITA</span><strong>{edition.number}</strong><div className="cover-orbit" /><b className="cover-title">{edition.title}</b><small>REVISTA DE DIVULGACIÓN CIENTÍFICA</small></div>
             )}
             <div className="edition-label">
               <span>{edition.year} · NÚMERO {edition.number}</span>
               <h2>{edition.title}</h2>
               <p>{edition.summary}</p>
-              <b>Explorar edición →</b>
+              <b>Explorar edición <span aria-hidden="true">→</span></b>
             </div>
           </Link>
         ))}
