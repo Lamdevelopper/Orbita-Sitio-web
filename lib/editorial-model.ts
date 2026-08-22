@@ -6,7 +6,6 @@
  * tested without a worker runtime.
  */
 
-// @ts-expect-error Node's strip-types test runner requires the explicit extension.
 import { homepageSlots, type HomepageSlot } from "./editorial-contract.ts";
 
 export const placementSlots = homepageSlots;
